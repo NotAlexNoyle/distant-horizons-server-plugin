@@ -168,6 +168,11 @@ update_events:
 # Default: 4
 scheduler_threads: 4
 
+# If a user uses /dh should we give them a help text?
+# Optional.
+# Default: true
+#enable_dh_command_help_text: false
+
 # Should we notify server admins when a new version of the plugin is available?
 # Optional.
 # Default: true

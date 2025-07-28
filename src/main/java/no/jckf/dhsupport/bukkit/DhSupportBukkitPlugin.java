@@ -89,7 +89,10 @@ public class DhSupportBukkitPlugin extends JavaPlugin
         this.getServer().getPluginManager().registerEvents(new PlayerHandler(this), this);
 
         this.getCommand("dhs").setExecutor(new DhsCommand(this));
-        this.getCommand("dh").setExecutor(new DhCommand(this));
+
+        if (this.getDhSupport().getConfig().getBool(DhsConfig.ENABLE_DH_COMMAND_HELP_TEXT, true)) {
+            this.getCommand("dh").setExecutor(new DhCommand(this));
+        }
 
         this.getLogger().info("Ready!");
     }

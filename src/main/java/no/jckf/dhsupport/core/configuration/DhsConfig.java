@@ -81,4 +81,6 @@ public abstract class DhsConfig
     public static String SAMPLE_BIOMES_3D = "sample_biomes_3d";
 
     public static String UPDATE_EVENTS = "update_events";
+
+    public static String ENABLE_DH_COMMAND_HELP_TEXT = "enable_dh_command_help_text";
 }
