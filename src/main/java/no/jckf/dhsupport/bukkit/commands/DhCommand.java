@@ -19,6 +19,7 @@
 package no.jckf.dhsupport.bukkit.commands;
 
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
+import no.jckf.dhsupport.core.configuration.DhsConfig;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -37,6 +38,10 @@ public class DhCommand implements CommandExecutor
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args)
     {
+        if (!this.plugin.getDhSupport().getConfig().getBool(DhsConfig.ENABLE_DH_COMMAND_HELP_TEXT, true)) {
+            return true;
+        }
+
         sender.sendMessage(ChatColor.RED + "You have issued a " + ChatColor.YELLOW + "/dh" + ChatColor.RED + " command which is meant for the Distant Horizons " + ChatColor.YELLOW + "mod" + ChatColor.RED + ", but you are using the " + ChatColor.YELLOW + "plugin" + ChatColor.RED + ". Please make sure you are reading the correct documentation.");
 
         return true;
