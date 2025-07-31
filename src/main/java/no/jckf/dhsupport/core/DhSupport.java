@@ -449,7 +449,13 @@ public class DhSupport implements Configurable
                         return null;
                     });
 
-                    return CompletableFuture.completedFuture(null);
+                    // If no dummy chunk is configured, reject the build request.
+                    if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    // Use dummy chunks instead of real world data.
+                    world.setDummyMode(true);
                 }
 
                 // No LOD was found. Start building a new one.

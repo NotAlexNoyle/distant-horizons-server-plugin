@@ -43,6 +43,10 @@ public interface WorldInterface extends Configurable
 
     @Nullable Integer getWorldBorderRadius();
 
+    void setDummyMode(boolean enable);
+
+    boolean isDummyMode();
+
     boolean chunkExists(int x, int z);
 
     boolean isChunkLoaded(int x, int z);

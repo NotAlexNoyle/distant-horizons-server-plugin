@@ -60,6 +60,14 @@ max_data_transfer_speed: 0
 # Default: true
 #generate_new_chunks_warning: false
 
+# Specs for a fake LOD to send when chunk generation is disabled and LOD requests otherwise would have been rejected.
+# Optional.
+# Default: Disabled
+#dummy_chunk:
+#  - "0-4,bedrock"
+#  - "5-79,stone"
+#  - "80-126,water"
+
 # How frequently (in seconds) should LODs be updated if world changes are detected?
 # Required.
 # Default: 5

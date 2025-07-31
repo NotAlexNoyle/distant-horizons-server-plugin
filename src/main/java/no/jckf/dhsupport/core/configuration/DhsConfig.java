@@ -83,4 +83,6 @@ public abstract class DhsConfig
     public static String UPDATE_EVENTS = "update_events";
 
     public static String ENABLE_DH_COMMAND_HELP_TEXT = "enable_dh_command_help_text";
+
+    public static String DUMMY_CHUNK = "dummy_chunk";
 }
