@@ -19,6 +19,7 @@
 package no.jckf.dhsupport.bukkit;
 
 import no.jckf.dhsupport.core.Coordinates;
+import no.jckf.dhsupport.core.Utils;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.configuration.WorldConfiguration;
@@ -210,19 +211,17 @@ public class BukkitWorldInterface implements WorldInterface
 
         for (String spec : this.getConfig().getStringList(DhsConfig.DUMMY_CHUNK)) {
             String[] components = spec.toLowerCase().split(",", 2);
-            String[] range = components[0].split("-", 2);
-            String[] material = components[1].split(":", 2);
 
-            int rangeStart = Integer.parseInt(range[0]);
-            int rangeEnd = range.length == 1 ? rangeStart : Integer.parseInt(range[1]);
-
-            String materialNamespace = material.length == 1 ? "minecraft" : material[0];
-            String materialName = material.length == 1 ? material[0] : material[1];
-            String namespacedKey = materialNamespace + ":" + materialName;
+            String namespacedKey = Utils.namespaceKey(components[1]);
 
             if (namespacedKey.equals("minecraft:air") || namespacedKey.equals("minecraft:void_air")) {
                 continue;
             }
+
+            String[] range = components[0].split("-", 2);
+
+            int rangeStart = Integer.parseInt(range[0]);
+            int rangeEnd = range.length == 1 ? rangeStart : Integer.parseInt(range[1]);
 
             for (int i = rangeStart; i <= rangeEnd; i++) {
                 column.put(minY + i, namespacedKey);
@@ -504,7 +503,9 @@ public class BukkitWorldInterface implements WorldInterface
             return this.getDummyMaterialAt(y);
         }
 
-        return this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+        String material = this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+
+        return Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + "." + Utils.unNamespaceKey(material), material));
     }
 
     @Override

@@ -114,4 +114,24 @@ public class Utils
 
         return builder.substring(0, builder.length() - 2);
     }
+
+    public static String namespaceKey(String key, String defaultNamespace)
+    {
+        return key.contains(":") ? key : defaultNamespace + ":" + key;
+    }
+
+    public static String namespaceKey(String key)
+    {
+        return namespaceKey(key, "minecraft");
+    }
+
+    public static String unNamespaceKey(String key, String namespace)
+    {
+        return key.startsWith(namespace + ":") ? key.substring(namespace.length() + 1) : key;
+    }
+
+    public static String unNamespaceKey(String key)
+    {
+        return unNamespaceKey(key, "minecraft");
+    }
 }

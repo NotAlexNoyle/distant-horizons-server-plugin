@@ -108,6 +108,21 @@ builder_resolution: 2
 # Default: auto
 #vanilla_world_border_expansion: 12
 
+# List of blocks to replace with other blocks during LOD building.
+# Useful to hide ugly blocks or valuable resources.
+# Don't use the "minecraft:" prefix for vanilla blocks.
+# DO use the namespace prefix for custom blocks.
+# Optional.
+# Default: Hide bamboo, seagrass, kelp, and iron + diamond ores.
+material_map:
+  bamboo: air
+  seagrass: water
+  tall_seagrass: water
+  kelp: water
+  kelp_plant: water
+  iron_ore: stone
+  diamond_ore: stone
+
 # World specific settings.
 # You can override any of the above settings on a per-world basis.
 worlds:
@@ -192,4 +207,4 @@ scheduler_threads: 4
 #debug: true
 
 # Don't touch :)
-config_version: 9
+config_version: 10
