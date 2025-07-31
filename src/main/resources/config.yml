@@ -71,7 +71,7 @@ max_data_transfer_speed: 0
 # How frequently (in seconds) should LODs be updated if world changes are detected?
 # Required.
 # Default: 5
-lod_refresh_interval: 5
+lod_refresh_interval: 15
 
 # Select which LOD builder to use.
 # Valid options are: FullBuilder, FastOverworldBuilder, and None.
@@ -155,19 +155,19 @@ worlds:
 update_events:
   - org.bukkit.event.block.BlockPlaceEvent
   - org.bukkit.event.block.BlockBreakEvent
-  - org.bukkit.event.block.TNTPrimeEvent
+#  - org.bukkit.event.block.TNTPrimeEvent
   - org.bukkit.event.block.BlockExplodeEvent
-  - org.bukkit.event.block.BlockIgniteEvent
-  - org.bukkit.event.block.BlockBurnEvent
-  - org.bukkit.event.block.LeavesDecayEvent
-  - org.bukkit.event.block.BlockFadeEvent
-  - org.bukkit.event.block.BlockGrowEvent
-  - org.bukkit.event.block.MoistureChangeEvent
-  - org.bukkit.event.block.BlockRedstoneEvent
+#  - org.bukkit.event.block.BlockIgniteEvent
+#  - org.bukkit.event.block.BlockBurnEvent
+#  - org.bukkit.event.block.LeavesDecayEvent
+#  - org.bukkit.event.block.BlockFadeEvent
+#  - org.bukkit.event.block.BlockGrowEvent
+#  - org.bukkit.event.block.MoistureChangeEvent
+#  - org.bukkit.event.block.BlockRedstoneEvent
   - org.bukkit.event.block.BlockPistonExtendEvent
   - org.bukkit.event.block.BlockPistonRetractEvent
-  - org.bukkit.event.block.SpongeAbsorbEvent
-  - org.bukkit.event.inventory.FurnaceBurnEvent
+#  - org.bukkit.event.block.SpongeAbsorbEvent
+#  - org.bukkit.event.inventory.FurnaceBurnEvent
   - org.bukkit.event.world.StructureGrowEvent
 
 # Number of worker threads used to generate LODs.
