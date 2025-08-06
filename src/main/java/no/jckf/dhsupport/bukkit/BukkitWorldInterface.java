@@ -600,9 +600,9 @@ public class BukkitWorldInterface implements WorldInterface
         while (y < maxY) {
             y++;
 
-            String material = this.getMaterialAt(x, y, z);
+            String material = Utils.unNamespaceKey(this.getMaterialAt(x, y, z)).toUpperCase();
 
-            if (!material.startsWith("minecraft:") || (!material.endsWith("stained_glass") && !material.endsWith("stained_glass_pane"))) {
+            if (!material.endsWith("_STAINED_GLASS") && !material.endsWith("_STAINED_GLASS_PANE")) {
                 skipped++;
 
                 if (skipped >= 5) {
@@ -614,9 +614,19 @@ public class BukkitWorldInterface implements WorldInterface
 
             n++;
 
-            String colorName = material.split("[:_]")[1].toUpperCase();
+            Color color = null;
 
-            Color color = DyeColor.valueOf(colorName).getColor();
+            for (DyeColor testColor : DyeColor.values()) {
+                if (material.startsWith(testColor.name())) {
+                    color = testColor.getColor();
+                    break;
+                }
+            }
+
+            if (color == null) {
+                this.getLogger().warning("Encountered unknown color: " + material);
+                continue;
+            }
 
             red += color.getRed();
             green += color.getGreen();
