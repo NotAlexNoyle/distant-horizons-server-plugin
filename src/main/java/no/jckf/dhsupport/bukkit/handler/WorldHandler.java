@@ -139,11 +139,19 @@ public class WorldHandler implements Listener
             throw new RuntimeException(exception);
         }
 
-        if (result instanceof Block) {
-            this.touchLod(((Block) result).getLocation(), eventClassName);
-        } else if (result instanceof List<?>) {
-            for (Block block : (List<Block>) result) {
-                this.touchLod(block.getLocation(), eventClassName);
+        if (result instanceof Block b) {
+            this.touchLod(b.getLocation(), eventClassName);
+        } else if (result instanceof BlockState s) {
+            this.touchLod(s.getLocation(), eventClassName);
+        } else if (result instanceof List<?> l) {
+            for (Object block : l) {
+                if (block instanceof Block b) {
+                    this.touchLod(b.getLocation(), eventClassName);
+                } else if (block instanceof BlockState s) {
+                    this.touchLod(s.getLocation(), eventClassName);
+                } else {
+                    this.plugin.getDhSupport().warning("Unknown block " + block + " from event: " + eventClassName);
+                }
             }
         } else {
             this.plugin.getDhSupport().warning("Unknown result from event: " + eventClassName);
