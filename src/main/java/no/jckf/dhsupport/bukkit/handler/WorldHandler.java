@@ -132,30 +132,28 @@ public class WorldHandler implements Listener
             }
         }
 
-        Object result;
+        List<?> list;
 
         try {
-            result = method.invoke(event);
+            Object result = method.invoke(event);
+
+            if (result instanceof List) {
+                list = (List<?>) result;
+            } else {
+                list = List.of(result);
+            }
         } catch (IllegalAccessException | InvocationTargetException exception) {
             throw new RuntimeException(exception);
         }
 
-        if (result instanceof Block b) {
-            this.touchLod(b.getLocation(), eventClassName);
-        } else if (result instanceof BlockState s) {
-            this.touchLod(s.getLocation(), eventClassName);
-        } else if (result instanceof List<?> l) {
-            for (Object block : l) {
-                if (block instanceof Block b) {
-                    this.touchLod(b.getLocation(), eventClassName);
-                } else if (block instanceof BlockState s) {
-                    this.touchLod(s.getLocation(), eventClassName);
-                } else {
-                    this.plugin.getDhSupport().warning("Unknown block " + block + " from event: " + eventClassName);
-                }
+        for (Object entry : list) {
+            if (entry instanceof Block block) {
+                this.touchLod(block.getLocation(), eventClassName);
+            } else if (entry instanceof BlockState state) {
+                this.touchLod(state.getLocation(), eventClassName);
+            } else {
+                this.plugin.getDhSupport().warning("Unknown block " + entry + " from event: " + eventClassName);
             }
-        } else {
-            this.plugin.getDhSupport().warning("Unknown result from event: " + eventClassName);
         }
     }
 
