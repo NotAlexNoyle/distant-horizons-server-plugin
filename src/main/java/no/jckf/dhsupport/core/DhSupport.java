@@ -339,25 +339,8 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        Scheduler scheduler = this.getScheduler();
-
-        CompletableFuture<Lod> queued;
-
-        // TODO: Fetch chunk data on region thread, then move to builder thread.
-        if (scheduler.canReadWorldAsync()) {
-            queued = this.getScheduler().runOnSeparateThread(
-                builder::generate
-            );
-        } else {
-            queued = this.getScheduler().runOnRegionThread(
-                worldId,
-                Coordinates.sectionToBlock(position.getX()),
-                Coordinates.sectionToBlock(position.getZ()),
-                builder::generate
-            );
-        }
-
-        queued = queued.thenApply((lod) -> {
+        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(builder::generate)
+            .thenApply((lod) -> {
                 this.queuedBuilders.remove(key);
 
                 return lod;

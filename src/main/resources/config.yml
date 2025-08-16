@@ -186,7 +186,6 @@ update_events:
   - org.bukkit.event.world.StructureGrowEvent
 
 # Number of worker threads used to generate LODs.
-# Does not affect Folia servers.
 # Required.
 # Default: 4
 scheduler_threads: 4

@@ -23,6 +23,7 @@ import no.jckf.dhsupport.core.Utils;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.configuration.WorldConfiguration;
+import no.jckf.dhsupport.core.scheduling.Scheduler;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.*;
 import org.bukkit.block.Beacon;
@@ -145,7 +146,17 @@ public class BukkitWorldInterface implements WorldInterface
             return this.chunks.get(key);
         }
 
-        ChunkSnapshot chunk = this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false);
+        ChunkSnapshot chunk;
+
+        Scheduler scheduler = this.plugin.getDhSupport().getScheduler();
+
+        if (scheduler.canReadWorldAsync()) {
+            chunk = this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false);
+        } else {
+            chunk = scheduler.runOnRegionThread(world.getUID(), x, z, () ->
+                this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false)
+            ).join();
+        }
 
         this.chunks.put(key, chunk);
 
