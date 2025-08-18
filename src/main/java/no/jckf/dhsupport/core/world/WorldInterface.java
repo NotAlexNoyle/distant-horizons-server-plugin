@@ -71,6 +71,12 @@ public interface WorldInterface extends Configurable
 
     int getSeaLevel();
 
+    int getSpawnX();
+
+    int getSpawnY();
+
+    int getSpawnZ();
+
     int getHighestYAt(int x, int z);
 
     String getBiomeAt(int x, int z);

@@ -471,6 +471,24 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
+    public int getSpawnX()
+    {
+        return this.world.getSpawnLocation().getBlockX();
+    }
+
+    @Override
+    public int getSpawnY()
+    {
+        return this.world.getSpawnLocation().getBlockY();
+    }
+
+    @Override
+    public int getSpawnZ()
+    {
+        return this.world.getSpawnLocation().getBlockZ();
+    }
+
+    @Override
     public int getHighestYAt(int x, int z)
     {
         if (this.isDummyMode()) {

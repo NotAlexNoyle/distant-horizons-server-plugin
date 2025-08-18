@@ -105,7 +105,7 @@ public class PreGenerator implements Runnable
                     position.setZ(currentZ);
                     position.setDetailLevel(6);
 
-                    CompletableFuture<LodModel> request = this.dhSupport.generateLod(this.world.getId(), position);
+                    CompletableFuture<LodModel> request = this.dhSupport.generateLod(this.world.getId(), position, true);
 
                     request.handle((lodModel, exception) -> this.inFlight--);
 

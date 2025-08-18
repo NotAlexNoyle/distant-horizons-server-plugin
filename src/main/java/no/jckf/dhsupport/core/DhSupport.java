@@ -43,10 +43,7 @@ import org.bukkit.entity.Player;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -369,11 +366,11 @@ public class DhSupport implements Configurable
                 }
 
                 // Otherwise generate a new one.
-                return this.generateLod(worldId, position);
+                return this.generateLod(worldId, position, true);
             });
     }
 
-    protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position)
+    protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position, boolean manageChunks)
     {
         this.joinPauseState();
 
@@ -386,17 +383,19 @@ public class DhSupport implements Configurable
 
         Map<String, CompletableFuture<Boolean>> loads = new HashMap<>();
 
-        // Load all the chunks we need for this request.
-        for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
-            for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
-                int chunkX = worldX + 16 * xMultiplier;
-                int chunkZ = worldZ + 16 * zMultiplier;
+        if (manageChunks) {
+            // Load all the chunks we need for this request.
+            for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
+                for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
+                    int chunkX = worldX + 16 * xMultiplier;
+                    int chunkZ = worldZ + 16 * zMultiplier;
 
-                if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                    if (generateNewChunks) {
-                        loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
-                    } else {
-                        loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
+                    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                        if (generateNewChunks) {
+                            loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
+                        } else {
+                            loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
+                        }
                     }
                 }
             }
@@ -672,5 +671,48 @@ public class DhSupport implements Configurable
             Coordinates.blockToSection(centerX + radius),
             Coordinates.blockToSection(centerZ + radius)
         );
+    }
+
+    public CompletableFuture<Double> benchmark(UUID worldId, int iterations, int concurrency)
+    {
+        WorldInterface world = this.getWorldInterface(worldId);
+
+        List<SectionPosition> positions = new ArrayList<>();
+
+        for (int i = 0; i < concurrency; i++) {
+            SectionPosition position = new SectionPosition();
+            position.setX(Coordinates.blockToSection(world.getSpawnX()) + i);
+            position.setZ(Coordinates.blockToSection(world.getSpawnZ()));
+
+            positions.add(position);
+        }
+
+        return CompletableFuture.allOf(
+                positions.stream()
+                    .map((position) -> this.generateLod(world.getId(), position, false))
+                    .toArray(CompletableFuture[]::new)
+            )
+            .thenCompose((foo) -> {
+                List<CompletableFuture<?>> chains = new ArrayList<>();
+
+                long ts = System.currentTimeMillis();
+
+                for (SectionPosition position : positions) {
+                    CompletableFuture<?> chain = CompletableFuture.completedFuture(null);
+
+                    for (int i = 0; i < iterations; i++) {
+                        chain = chain.thenCompose((bar) -> this.generateLod(world.getId(), position, false));
+                    }
+
+                    chains.add(chain);
+                }
+
+                return CompletableFuture.allOf(chains.toArray(CompletableFuture[]::new))
+                    .thenApply((bar) -> {
+                        double elapsed = (System.currentTimeMillis() - ts) / 1000d;
+
+                        return iterations * concurrency / elapsed;
+                    });
+            });
     }
 }
