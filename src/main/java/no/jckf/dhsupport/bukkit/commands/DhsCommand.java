@@ -78,6 +78,9 @@ public class DhsCommand implements CommandExecutor
 
             case "bench":
                 return this.bench(sender, Arrays.copyOfRange(args, 1, args.length));
+
+            case "config":
+                return this.config(sender, Arrays.copyOfRange(args, 1, args.length));
         }
 
         sender.sendMessage(ChatColor.RED + "Unknown sub-command.");
@@ -492,6 +495,46 @@ public class DhsCommand implements CommandExecutor
             .thenAccept((lodsPerSecond) -> {
                 sender.sendMessage(ChatColor.GREEN + "Benchmark completed! Result: " + ChatColor.BLUE + String.format("%.2f", lodsPerSecond * 16) + ChatColor.GREEN + " CPS.");
             });
+
+        return true;
+    }
+
+    public boolean config(CommandSender sender, String[] args)
+    {
+        if (args.length < 1) {
+            sender.sendMessage(ChatColor.RED + "Missing action.");
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Missing key.");
+            return true;
+        }
+
+        switch (args[0]) {
+            case "set":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Missing value.");
+                    return true;
+                }
+
+                this.plugin.getDhSupport().getConfig().set(args[1], args[2]);
+
+                sender.sendMessage(ChatColor.GREEN + "Set " + ChatColor.BLUE + args[1] + ChatColor.GREEN + " to " + ChatColor.BLUE + args[2] + ChatColor.GREEN + ".");
+                return true;
+
+            case "get":
+                sender.sendMessage(ChatColor.GREEN + "Value of " + ChatColor.BLUE + args[1] + ChatColor.GREEN + " is " + ChatColor.BLUE + this.plugin.getDhSupport().getConfig().get(args[1]) + ChatColor.GREEN + ".");
+                return true;
+
+            case "unset":
+                this.plugin.getDhSupport().getConfig().unset(args[1]);
+
+                sender.sendMessage(ChatColor.GREEN + "Unset " + ChatColor.BLUE + args[1] + ChatColor.GREEN + ".");
+                return true;
+        }
+
+        sender.sendMessage(ChatColor.RED + "Unknown action.");
 
         return true;
     }
