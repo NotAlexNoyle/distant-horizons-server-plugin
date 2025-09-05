@@ -21,6 +21,7 @@ package no.jckf.dhsupport.core.scheduling;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public interface Scheduler
@@ -29,9 +30,21 @@ public interface Scheduler
 
     <U> CompletableFuture<U> runOnMainThread(Supplier<U> supplier);
 
+    <U> CompletableFuture<U> runOnMainThreadDelayed(Supplier<U> supplier, long delayTicks);
+
+    <U> CompletableFuture<U> runOnMainThreadDelayed(Supplier<U> supplier, long delayAmount, TimeUnit delayUnit);
+
     <U> CompletableFuture<U> runOnRegionThread(UUID worldId, int x, int z, Supplier<U> supplier);
 
+    <U> CompletableFuture<U> runOnRegionThreadDelayed(UUID worldId, int x, int z, Supplier<U> supplier, long delayTicks);
+
+    <U> CompletableFuture<U> runOnRegionThreadDelayed(UUID worldId, int x, int z, Supplier<U> supplier, long delayAmount, TimeUnit delayUnit);
+
     <U> CompletableFuture<U> runOnSeparateThread(Supplier<U> supplier);
+
+    <U> CompletableFuture<U> runOnSeparateThreadDelayed(Supplier<U> supplier, long delayTicks);
+
+    <U> CompletableFuture<U> runOnSeparateThreadDelayed(Supplier<U> supplier, long delayAmount, TimeUnit delayUnit);
 
     void cancelTasks();
 
