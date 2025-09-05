@@ -37,6 +37,18 @@ public class Configuration
 
     public void set(String key, @Nullable Object value)
     {
+        if (value instanceof String stringValue) {
+            if ("false".equalsIgnoreCase(stringValue)) {
+                value = false;
+            } else if ("true".equalsIgnoreCase(stringValue)) {
+                value = true;
+            } else {
+                try {
+                    value = Integer.parseInt(stringValue);
+                } catch (NumberFormatException exception) {}
+            }
+        }
+
         this.variables.put(key, value);
     }
 
