@@ -19,9 +19,16 @@
 package no.jckf.dhsupport.bukkit.handler;
 
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
+import no.jckf.dhsupport.core.DhSupport;
+import no.jckf.dhsupport.core.configuration.DhsConfig;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerHandler implements Listener
 {
@@ -30,6 +37,26 @@ public class PlayerHandler implements Listener
     public PlayerHandler(DhSupportBukkitPlugin plugin)
     {
         this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void onPlayerConnect(PlayerJoinEvent event)
+    {
+        Player player = event.getPlayer();
+
+        DhSupport dhSupport = this.plugin.getDhSupport();
+
+        dhSupport.getScheduler().runOnMainThreadDelayed(() -> {
+            if (dhSupport.getPlayerConfiguration(player.getUniqueId()) != null) {
+                return null;
+            }
+
+            for (String message : dhSupport.getConfig().getStringList(DhsConfig.AD_MESSAGE, new ArrayList<>())) {
+                player.sendMessage(message);
+            }
+
+            return null;
+        }, 10, TimeUnit.SECONDS); // Arbitrary delay, waiting for DH config message (or the lack of one).
     }
 
     @EventHandler

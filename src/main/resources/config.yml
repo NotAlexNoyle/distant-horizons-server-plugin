@@ -190,6 +190,13 @@ update_events:
 # Default: 4
 scheduler_threads: 4
 
+# Show a message to players who join if they don't have Distant Horizons installed?
+# Optional.
+# Default: Disabled
+#ad_message:
+#  - "§aThis server supports §bDistant Horizons§a!"
+#  - "§aVisit §nhttp://dh-mod.com/§r§a to learn more."
+
 # If a user uses /dh should we give them a help text?
 # Optional.
 # Default: true

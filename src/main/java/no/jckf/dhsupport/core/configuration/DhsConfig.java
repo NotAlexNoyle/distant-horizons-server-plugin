@@ -87,4 +87,6 @@ public abstract class DhsConfig
     public static String DUMMY_CHUNK = "dummy_chunk";
 
     public static String MATERIAL_MAP = "material_map";
+
+    public static String AD_MESSAGE = "ad_message";
 }
