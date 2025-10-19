@@ -52,8 +52,6 @@ public class PlayerConfigHandler
             String permission = USAGE_PERMISSION.formatted(world.getName());
             boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
 
-            double coordinateScale = world.getCoordinateScale();
-
             Configuration dhsConfig = world.getConfig();
 
             String levelKeyPrefix = dhsConfig.getString(DhsConfig.LEVEL_KEY_PREFIX);
