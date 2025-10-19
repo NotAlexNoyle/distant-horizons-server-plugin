@@ -27,14 +27,9 @@ replay_pid*
 /.idea
 /*.iml
 
-# Maven output
-/dependency-reduced-pom.xml
-/target
-/jars
-/.m2
-
-# Env vars
-.env
+# Gradle output
+/.gradle
+/build
 
 # Test server
 /server

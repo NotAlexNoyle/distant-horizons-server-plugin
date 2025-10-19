@@ -76,7 +76,7 @@ public class Database
         return this.preparedStatements.get(sql);
     }
 
-    protected void clearQueryCache()
+    public void clearQueryCache()
     {
         for (String key : this.preparedStatements.keySet()) {
             try {

@@ -50,7 +50,7 @@ public class LodHandler
     public void register()
     {
         this.pluginMessageHandler.getEventBus().registerHandler(FullDataSourceRequestMessage.class, (requestMessage) -> {
-            //this.dhSupport.info("LOD request for " + requestMessage.getPosition().getX() + " x " + requestMessage.getPosition().getZ());
+            //this.dhSupport.info("LOD request for " + requestMessage.getPosition().getX() + " " + requestMessage.getPosition().getZ());
 
             if (requestMessage.getPosition().getDetailLevel() != 6) {
                 ExceptionMessage exceptionMessage = new ExceptionMessage();
@@ -174,7 +174,7 @@ public class LodHandler
                             this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), chunkResponse);
                         }
 
-                        //this.dhSupport.info("LOD in " + chunkCount + " parts sent for " + requestMessage.getPosition().getX() + " x " + requestMessage.getPosition().getZ());
+                        //this.dhSupport.info("LOD in " + chunkCount + " parts sent for " + requestMessage.getPosition().getX() + " " + requestMessage.getPosition().getZ());
                     }
 
                     this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), responseMessage);

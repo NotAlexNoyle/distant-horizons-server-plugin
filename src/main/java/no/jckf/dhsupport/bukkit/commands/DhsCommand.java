@@ -75,6 +75,12 @@ public class DhsCommand implements CommandExecutor
 
             case "trim":
                 return this.trim(sender, Arrays.copyOfRange(args, 1, args.length));
+
+            case "bench":
+                return this.bench(sender, Arrays.copyOfRange(args, 1, args.length));
+
+            case "config":
+                return this.config(sender, Arrays.copyOfRange(args, 1, args.length));
         }
 
         sender.sendMessage(ChatColor.RED + "Unknown sub-command.");
@@ -251,7 +257,7 @@ public class DhsCommand implements CommandExecutor
 
         boolean force = args.length >= 5 && args[4].equals("force");
 
-        sender.sendMessage(ChatColor.YELLOW + "Generating LODs for view distance of " + ChatColor.GREEN + Coordinates.blockToChunk(radius) + ChatColor.YELLOW + " chunks in world " + ChatColor.GREEN + world.getName() + ChatColor.YELLOW + " starting at center " + ChatColor.GREEN + centerX + " x " + centerZ + ChatColor.YELLOW + "...");
+        sender.sendMessage(ChatColor.YELLOW + "Generating LODs for view distance of " + ChatColor.GREEN + Coordinates.blockToChunk(radius) + ChatColor.YELLOW + " chunks in world " + ChatColor.GREEN + world.getName() + ChatColor.YELLOW + " starting at center " + ChatColor.GREEN + centerX + " " + centerZ + ChatColor.YELLOW + "...");
 
         if (force) {
             sender.sendMessage(ChatColor.YELLOW + "All existing LODs in this area will be re-generated.");
@@ -432,12 +438,103 @@ public class DhsCommand implements CommandExecutor
             return true;
         }
 
-        sender.sendMessage(ChatColor.YELLOW + "Trimming LODs outside view distance of " + ChatColor.GREEN + radius + ChatColor.YELLOW + " blocks in world " + ChatColor.GREEN + world.getName() + ChatColor.YELLOW + " centered at " + ChatColor.GREEN + centerX + " x " + centerZ + ChatColor.YELLOW + "...");
+        sender.sendMessage(ChatColor.YELLOW + "Trimming LODs outside view distance of " + ChatColor.GREEN + radius + ChatColor.YELLOW + " blocks in world " + ChatColor.GREEN + world.getName() + ChatColor.YELLOW + " centered at " + ChatColor.GREEN + centerX + " " + centerZ + ChatColor.YELLOW + "...");
 
         this.plugin.getDhSupport().trim(world, centerX, centerZ, radius)
             .thenAccept((trimmedCount) -> {
                 sender.sendMessage(ChatColor.GREEN + "Trimming of " + ChatColor.YELLOW + trimmedCount + ChatColor.GREEN + " LODs in " + ChatColor.YELLOW + world.getName() + ChatColor.GREEN + " completed.");
             });
+
+        return true;
+    }
+
+    protected boolean bench(CommandSender sender, String[] args)
+    {
+        int schedulerThreads = this.plugin.getDhSupport().getConfig().getInt(DhsConfig.SCHEDULER_THREADS);
+
+        WorldInterface world;
+        int iterations = 1000;
+        int concurrency = schedulerThreads;
+
+        if (args.length >= 1) {
+            World bukkitWorld = this.plugin.getWorld(args[0]);
+
+            if (bukkitWorld == null) {
+                sender.sendMessage(ChatColor.RED + "Unknown world.");
+                return true;
+            }
+
+            world = this.plugin.getDhSupport().getWorldInterface(bukkitWorld.getUID());
+        } else if (sender instanceof Player) {
+            world = this.plugin.getDhSupport().getWorldInterface(((Player) sender).getWorld().getUID());
+        } else {
+            world = null;
+        }
+
+        if (world == null) {
+            sender.sendMessage(ChatColor.RED + "No world specified.");
+            return true;
+        }
+
+        if (args.length >= 2) {
+            iterations = Integer.parseInt(args[1]);
+        }
+
+        if (args.length >= 3) {
+            concurrency = Integer.parseInt(args[2]);
+        }
+
+        if (concurrency > schedulerThreads) {
+            sender.sendMessage(ChatColor.RED + "Concurrency of " + ChatColor.YELLOW + concurrency + ChatColor.RED + " is more than the " + ChatColor.YELLOW + schedulerThreads + ChatColor.RED + " scheduler threads this server is running.");
+            return true;
+        }
+
+        sender.sendMessage(ChatColor.BLUE + "Starting benchmark with " + ChatColor.GREEN + iterations + ChatColor.BLUE + " iterations times " + ChatColor.GREEN + concurrency + ChatColor.BLUE + " threads in world " + ChatColor.GREEN + world.getName() + ChatColor.BLUE + "...");
+
+        this.plugin.getDhSupport().benchmark(world.getId(), iterations, concurrency)
+            .thenAccept((lodsPerSecond) -> {
+                sender.sendMessage(ChatColor.GREEN + "Benchmark completed! Result: " + ChatColor.BLUE + String.format("%.2f", lodsPerSecond * 16) + ChatColor.GREEN + " CPS.");
+            });
+
+        return true;
+    }
+
+    public boolean config(CommandSender sender, String[] args)
+    {
+        if (args.length < 1) {
+            sender.sendMessage(ChatColor.RED + "Missing action.");
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Missing key.");
+            return true;
+        }
+
+        switch (args[0]) {
+            case "set":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "Missing value.");
+                    return true;
+                }
+
+                this.plugin.getDhSupport().getConfig().set(args[1], args[2]);
+
+                sender.sendMessage(ChatColor.GREEN + "Set " + ChatColor.BLUE + args[1] + ChatColor.GREEN + " to " + ChatColor.BLUE + args[2] + ChatColor.GREEN + ".");
+                return true;
+
+            case "get":
+                sender.sendMessage(ChatColor.GREEN + "Value of " + ChatColor.BLUE + args[1] + ChatColor.GREEN + " is " + ChatColor.BLUE + this.plugin.getDhSupport().getConfig().get(args[1]) + ChatColor.GREEN + ".");
+                return true;
+
+            case "unset":
+                this.plugin.getDhSupport().getConfig().unset(args[1]);
+
+                sender.sendMessage(ChatColor.GREEN + "Unset " + ChatColor.BLUE + args[1] + ChatColor.GREEN + ".");
+                return true;
+        }
+
+        sender.sendMessage(ChatColor.RED + "Unknown action.");
 
         return true;
     }

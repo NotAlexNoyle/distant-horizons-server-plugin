@@ -10,13 +10,9 @@ Please see [our wiki](https://gitlab.com/distant-horizons-team/distant-horizons-
 
 ## Building
 
-### Dockerized
+This project uses Gradle.
 
-If you have Docker; run `docker compose up` to build the project inside a container. See `.env.example` if you need to adjust the user/group of the build process.
-
-### Using Maven directly
-
-Just run `mvn` in the project directory to compile and package a new JAR.
+`gradlew clean build`
 
 ## Contribution
 

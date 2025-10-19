@@ -77,4 +77,16 @@ public abstract class DhsConfig
     public static String INCLUDE_NON_COLLIDING_TOP_LAYER = "include_non-colliding_top_layer";
 
     public static String PERFORM_UNDERGLOW_HACK = "perform_underglow_hack";
+
+    public static String SAMPLE_BIOMES_3D = "sample_biomes_3d";
+
+    public static String UPDATE_EVENTS = "update_events";
+
+    public static String ENABLE_DH_COMMAND_HELP_TEXT = "enable_dh_command_help_text";
+
+    public static String DUMMY_CHUNK = "dummy_chunk";
+
+    public static String MATERIAL_MAP = "material_map";
+
+    public static String AD_MESSAGE = "ad_message";
 }

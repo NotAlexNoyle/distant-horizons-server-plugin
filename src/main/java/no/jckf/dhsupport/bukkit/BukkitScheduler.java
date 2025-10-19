@@ -36,6 +36,8 @@ public class BukkitScheduler implements Scheduler
 
     protected ExecutorService executor;
 
+    protected ScheduledExecutorService scheduledExecutor;
+
     public BukkitScheduler(DhSupportBukkitPlugin plugin)
     {
         this.plugin = plugin;
@@ -52,6 +54,8 @@ public class BukkitScheduler implements Scheduler
 
         ((ThreadPoolExecutor) this.executor).allowCoreThreadTimeOut(true);
 
+        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+
         this.plugin.getDhSupport().info("Using " + Utils.ucFirst(this.foliaLib.getImplType().name().toLowerCase().replace('_', ' ')) + " scheduler.");
     }
 
@@ -66,13 +70,49 @@ public class BukkitScheduler implements Scheduler
     {
         CompletableFuture<U> future = new CompletableFuture<>();
 
-        this.foliaLib.getScheduler().runNextTick((task) -> {
+        if (this.foliaLib.getScheduler().isGlobalTickThread()) {
+            future.complete(supplier.get());
+        } else {
+            this.foliaLib.getScheduler().runNextTick((task) -> {
+                try {
+                    future.complete(supplier.get());
+                } catch (Exception exception) {
+                    future.completeExceptionally(exception);
+                }
+            });
+        }
+
+        return future;
+    }
+
+    @Override
+    public <U> CompletableFuture<U> runOnMainThreadDelayed(Supplier<U> supplier, long delayTicks)
+    {
+        CompletableFuture<U> future = new CompletableFuture<>();
+
+        this.foliaLib.getScheduler().runLater((task) -> {
             try {
                 future.complete(supplier.get());
             } catch (Exception exception) {
                 future.completeExceptionally(exception);
             }
-        });
+        }, delayTicks);
+
+        return future;
+    }
+
+    @Override
+    public <U> CompletableFuture<U> runOnMainThreadDelayed(Supplier<U> supplier, long delayAmount, TimeUnit delayUnit)
+    {
+        CompletableFuture<U> future = new CompletableFuture<>();
+
+        this.foliaLib.getScheduler().runLater((task) -> {
+            try {
+                future.complete(supplier.get());
+            } catch (Exception exception) {
+                future.completeExceptionally(exception);
+            }
+        }, delayAmount, delayUnit);
 
         return future;
     }
@@ -89,16 +129,66 @@ public class BukkitScheduler implements Scheduler
             z
         );
 
-        this.foliaLib.getScheduler().runAtLocation(
-            location,
-            (task) -> {
-                try {
-                    future.complete(supplier.get());
-                } catch (Exception exception) {
-                    future.completeExceptionally(exception);
-                }
-            }
+        if (this.foliaLib.getScheduler().isOwnedByCurrentRegion(location)) {
+            future.complete(supplier.get());
+        } else {
+            this.foliaLib.getScheduler().runAtLocation(
+                    location,
+                    (task) -> {
+                        try {
+                            future.complete(supplier.get());
+                        } catch (Exception exception) {
+                            future.completeExceptionally(exception);
+                        }
+                    }
+            );
+        }
+
+        return future;
+    }
+
+    @Override
+    public <U> CompletableFuture<U> runOnRegionThreadDelayed(UUID worldId, int x, int z, Supplier<U> supplier, long delayTicks)
+    {
+        CompletableFuture<U> future = new CompletableFuture<>();
+
+        Location location = new Location(
+            this.plugin.getServer().getWorld(worldId),
+            x,
+            0,
+            z
         );
+
+        this.foliaLib.getScheduler().runAtLocationLater(location, (task) -> {
+            try {
+                future.complete(supplier.get());
+            } catch (Exception exception) {
+                future.completeExceptionally(exception);
+            }
+        }, delayTicks);
+
+        return future;
+    }
+
+    @Override
+    public <U> CompletableFuture<U> runOnRegionThreadDelayed(UUID worldId, int x, int z, Supplier<U> supplier, long delayAmount, TimeUnit delayUnit)
+    {
+        CompletableFuture<U> future = new CompletableFuture<>();
+
+        Location location = new Location(
+            this.plugin.getServer().getWorld(worldId),
+            x,
+            0,
+            z
+        );
+
+        this.foliaLib.getScheduler().runAtLocationLater(location, (task) -> {
+            try {
+                future.complete(supplier.get());
+            } catch (Exception exception) {
+                future.completeExceptionally(exception);
+            }
+        }, delayAmount, delayUnit);
 
         return future;
     }
@@ -120,9 +210,36 @@ public class BukkitScheduler implements Scheduler
     }
 
     @Override
+    public <U> CompletableFuture<U> runOnSeparateThreadDelayed(Supplier<U> supplier, long delayTicks)
+    {
+        return this.runOnSeparateThreadDelayed(supplier, delayTicks * 50L, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public <U> CompletableFuture<U> runOnSeparateThreadDelayed(Supplier<U> supplier, long delayAmount, TimeUnit delayUnit)
+    {
+        CompletableFuture<U> future = new CompletableFuture<>();
+
+        this.scheduledExecutor.schedule(() -> {
+            this.runOnSeparateThread(() -> {
+                try {
+                    future.complete(supplier.get());
+                } catch (Exception exception) {
+                    future.completeExceptionally(exception);
+                }
+
+                return null;
+            });
+        }, delayAmount, delayUnit);
+
+        return future;
+    }
+
+    @Override
     public void cancelTasks()
     {
-        this.executor.shutdown();
+        this.scheduledExecutor.shutdownNow();
+        this.executor.shutdownNow();
         this.foliaLib.getScheduler().cancelAllTasks();
     }
 

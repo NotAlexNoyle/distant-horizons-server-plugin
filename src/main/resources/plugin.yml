@@ -1,8 +1,7 @@
 name: DHSupport
-version: ${project.version}
-main: ${main.class}
-api-version: ${mc.api-version}
-mc-version: ${mc.api-version}${mc.api-version-patch}
+version: ${version}
+main: ${mainClass}
+api-version: ${mcApiVersion}
 prefix: DHS
 folia-supported: true
 author: Jckf

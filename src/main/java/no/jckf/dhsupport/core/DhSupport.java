@@ -43,10 +43,7 @@ import org.bukkit.entity.Player;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -56,8 +53,6 @@ import java.util.logging.Logger;
 public class DhSupport implements Configurable
 {
     protected String pluginVersion;
-
-    protected String mcVersion;
 
     protected String dataDirectory;
 
@@ -92,10 +87,9 @@ public class DhSupport implements Configurable
 
     protected Map<UUID, PreGenerator> preGenerators = new HashMap<>();
 
-    public DhSupport(String pluginVersion, String mcVersion)
+    public DhSupport(String pluginVersion)
     {
         this.pluginVersion = pluginVersion;
-        this.mcVersion = mcVersion;
 
         this.configuration = new Configuration();
 
@@ -274,7 +268,12 @@ public class DhSupport implements Configurable
 
     public void debug(String message)
     {
-        //this.getLogger().info("[DEBUG] " + message);
+        // TODO: Use log levels properly?
+        if (!this.getConfig().getBool(DhsConfig.DEBUG, false)) {
+            return;
+        }
+
+        this.getLogger().info("[DEBUG] " + message);
     }
 
     public void checkUpdates()
@@ -337,25 +336,8 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        Scheduler scheduler = this.getScheduler();
-
-        CompletableFuture<Lod> queued;
-
-        // TODO: Fetch chunk data on region thread, then move to builder thread.
-        if (scheduler.canReadWorldAsync()) {
-            queued = this.getScheduler().runOnSeparateThread(
-                builder::generate
-            );
-        } else {
-            queued = this.getScheduler().runOnRegionThread(
-                worldId,
-                Coordinates.sectionToBlock(position.getX()),
-                Coordinates.sectionToBlock(position.getZ()),
-                builder::generate
-            );
-        }
-
-        queued = queued.thenApply((lod) -> {
+        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(builder::generate)
+            .thenApply((lod) -> {
                 this.queuedBuilders.remove(key);
 
                 return lod;
@@ -384,11 +366,11 @@ public class DhSupport implements Configurable
                 }
 
                 // Otherwise generate a new one.
-                return this.generateLod(worldId, position);
+                return this.generateLod(worldId, position, true);
             });
     }
 
-    protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position)
+    protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position, boolean manageChunks)
     {
         this.joinPauseState();
 
@@ -401,17 +383,19 @@ public class DhSupport implements Configurable
 
         Map<String, CompletableFuture<Boolean>> loads = new HashMap<>();
 
-        // Load all the chunks we need for this request.
-        for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
-            for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
-                int chunkX = worldX + 16 * xMultiplier;
-                int chunkZ = worldZ + 16 * zMultiplier;
+        if (manageChunks) {
+            // Load all the chunks we need for this request.
+            for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
+                for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
+                    int chunkX = worldX + 16 * xMultiplier;
+                    int chunkZ = worldZ + 16 * zMultiplier;
 
-                if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                    if (generateNewChunks) {
-                        loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
-                    } else {
-                        loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
+                    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                        if (generateNewChunks) {
+                            loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
+                        } else {
+                            loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
+                        }
                     }
                 }
             }
@@ -447,7 +431,13 @@ public class DhSupport implements Configurable
                         return null;
                     });
 
-                    return CompletableFuture.completedFuture(null);
+                    // If no dummy chunk is configured, reject the build request.
+                    if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    // Use dummy chunks instead of real world data.
+                    world.setDummyMode(true);
                 }
 
                 // No LOD was found. Start building a new one.
@@ -489,7 +479,7 @@ public class DhSupport implements Configurable
             });
     }
 
-    public void touchLod(UUID worldId, int x, int z)
+    public void touchLod(UUID worldId, int x, int z, @Nullable String reason)
     {
         int sectionX = Coordinates.blockToSection(x);
         int sectionZ = Coordinates.blockToSection(z);
@@ -505,7 +495,14 @@ public class DhSupport implements Configurable
             return;
         }
 
+        this.debug("Touched LOD at " + this.getWorldInterface(worldId).getName() + " " + x + " " + z + (reason == null ? "." : ": " + reason));
+
         this.touchedLods.put(key, lodModel);
+    }
+
+    public void touchLod(UUID worldId, int x, int z)
+    {
+        this.touchLod(worldId, x, z, null);
     }
 
     public void updateTouchedLods()
@@ -520,7 +517,7 @@ public class DhSupport implements Configurable
 
             WorldInterface world = this.getWorldInterface(lodModelToDelete.getWorldId());
 
-            this.debug("Changes detected in " + world.getName() + " " + lodModelToDelete.getX() + "x" + lodModelToDelete.getZ() + ".");
+            this.debug("Changes detected in " + world.getName() + " " + lodModelToDelete.getX() + " " + lodModelToDelete.getZ() + ".");
 
             this.getLodRepository().lodExistsAsync(lodModelToDelete.getWorldId(), lodModelToDelete.getX(), lodModelToDelete.getZ()).thenAccept((exists) -> {
                 if (!exists) {
@@ -530,7 +527,7 @@ public class DhSupport implements Configurable
                 this.getLodRepository().deleteLodAsync(lodModelToDelete.getWorldId(), lodModelToDelete.getX(), lodModelToDelete.getZ())
                     .thenAccept((deleted) -> {
                         if (!deleted) {
-                            this.warning("Could not delete LOD " + world.getName() + " " + lodModelToDelete.getX() + "x" + lodModelToDelete.getZ() + ".");
+                            this.warning("Could not delete LOD " + world.getName() + " " + lodModelToDelete.getX() + " " + lodModelToDelete.getZ() + ".");
                             return;
                         }
 
@@ -547,7 +544,7 @@ public class DhSupport implements Configurable
                                 boolean updatesEnabled = worldConfig.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED);
 
                                 if (!updatesEnabled) {
-                                    this.debug("New LOD " + world.getName() + " " + lodModelToDelete.getX() + "x" + lodModelToDelete.getZ() + " generated, but real-time updates are disabled.");
+                                    this.debug("New LOD " + world.getName() + " " + lodModelToDelete.getX() + " " + lodModelToDelete.getZ() + " generated, but real-time updates are disabled.");
                                     return;
                                 }
 
@@ -622,7 +619,7 @@ public class DhSupport implements Configurable
                                     this.pluginMessageHandler.sendPluginMessage(player.getUniqueId(), partialUpdateMessage);
                                 }
 
-                                this.debug("Updated LOD " + world.getName() + " " + lodModelToDelete.getX() + "x" + lodModelToDelete.getZ() + " sent to " + playersInRangeCount + " players. Found " + playersOutOfRangeCount + " players out of range, and " + playersWithoutDhCount + " players without DH.");
+                                this.debug("Updated LOD " + world.getName() + " " + lodModelToDelete.getX() + " " + lodModelToDelete.getZ() + " sent to " + playersInRangeCount + " players. Found " + playersOutOfRangeCount + " players out of range, and " + playersWithoutDhCount + " players without DH.");
                             });
                     });
             });
@@ -674,5 +671,48 @@ public class DhSupport implements Configurable
             Coordinates.blockToSection(centerX + radius),
             Coordinates.blockToSection(centerZ + radius)
         );
+    }
+
+    public CompletableFuture<Double> benchmark(UUID worldId, int iterations, int concurrency)
+    {
+        WorldInterface world = this.getWorldInterface(worldId);
+
+        List<SectionPosition> positions = new ArrayList<>();
+
+        for (int i = 0; i < concurrency; i++) {
+            SectionPosition position = new SectionPosition();
+            position.setX(Coordinates.blockToSection(world.getSpawnX()) + i);
+            position.setZ(Coordinates.blockToSection(world.getSpawnZ()));
+
+            positions.add(position);
+        }
+
+        return CompletableFuture.allOf(
+                positions.stream()
+                    .map((position) -> this.generateLod(world.getId(), position, false))
+                    .toArray(CompletableFuture[]::new)
+            )
+            .thenCompose((foo) -> {
+                List<CompletableFuture<?>> chains = new ArrayList<>();
+
+                long ts = System.currentTimeMillis();
+
+                for (SectionPosition position : positions) {
+                    CompletableFuture<?> chain = CompletableFuture.completedFuture(null);
+
+                    for (int i = 0; i < iterations; i++) {
+                        chain = chain.thenCompose((bar) -> this.generateLod(world.getId(), position, false));
+                    }
+
+                    chains.add(chain);
+                }
+
+                return CompletableFuture.allOf(chains.toArray(CompletableFuture[]::new))
+                    .thenApply((bar) -> {
+                        double elapsed = (System.currentTimeMillis() - ts) / 1000d;
+
+                        return iterations * concurrency / elapsed;
+                    });
+            });
     }
 }

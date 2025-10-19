@@ -19,9 +19,11 @@
 package no.jckf.dhsupport.bukkit;
 
 import no.jckf.dhsupport.core.Coordinates;
+import no.jckf.dhsupport.core.Utils;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.configuration.WorldConfiguration;
+import no.jckf.dhsupport.core.scheduling.Scheduler;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.*;
 import org.bukkit.block.Beacon;
@@ -30,10 +32,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
@@ -52,6 +51,10 @@ public class BukkitWorldInterface implements WorldInterface
     protected WorldConfiguration worldConfig;
 
     protected Logger logger;
+
+    protected boolean dummyMode = false;
+
+    protected Map<Integer, String> dummyColumn;
 
     protected Map<String, ChunkSnapshot> chunks = new HashMap<>();
 
@@ -143,7 +146,17 @@ public class BukkitWorldInterface implements WorldInterface
             return this.chunks.get(key);
         }
 
-        ChunkSnapshot chunk = this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false);
+        ChunkSnapshot chunk;
+
+        Scheduler scheduler = this.plugin.getDhSupport().getScheduler();
+
+        if (scheduler.canReadWorldAsync()) {
+            chunk = this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false);
+        } else {
+            chunk = scheduler.runOnRegionThread(world.getUID(), x, z, () ->
+                this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false)
+            ).join();
+        }
 
         this.chunks.put(key, chunk);
 
@@ -190,6 +203,60 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
+    public void setDummyMode(boolean enable)
+    {
+        this.dummyMode = enable;
+    }
+
+    @Override
+    public boolean isDummyMode()
+    {
+        return this.dummyMode;
+    }
+
+    protected Map<Integer, String> buildDummyColumn()
+    {
+        int minY = this.getMinY();
+
+        Map<Integer, String> column = new HashMap<>();
+
+        for (String spec : this.getConfig().getStringList(DhsConfig.DUMMY_CHUNK)) {
+            String[] components = spec.toLowerCase().split(",", 2);
+
+            String namespacedKey = Utils.namespaceKey(components[1]);
+
+            if (namespacedKey.equals("minecraft:air") || namespacedKey.equals("minecraft:void_air")) {
+                continue;
+            }
+
+            String[] range = components[0].split("-", 2);
+
+            int rangeStart = Integer.parseInt(range[0]);
+            int rangeEnd = range.length == 1 ? rangeStart : Integer.parseInt(range[1]);
+
+            for (int i = rangeStart; i <= rangeEnd; i++) {
+                column.put(minY + i, namespacedKey);
+            }
+        }
+
+        return column;
+    }
+
+    protected Map<Integer, String> getDummyColumn()
+    {
+        if (this.dummyColumn == null) {
+            this.dummyColumn = this.buildDummyColumn();
+        }
+
+        return this.dummyColumn;
+    }
+
+    protected String getDummyMaterialAt(int y)
+    {
+        return this.getDummyColumn().getOrDefault(y, "minecraft:air");
+    }
+
+    @Override
     public Integer getWorldBorderX()
     {
         if (this.useVanillaWorldBorder()) {
@@ -230,6 +297,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean chunkExists(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -260,6 +331,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean isChunkLoaded(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -269,6 +344,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean loadChunk(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -278,6 +357,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean loadOrGenerateChunk(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -287,6 +370,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public CompletableFuture<Boolean> loadChunkAsync(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return CompletableFuture.completedFuture(true);
+        }
+
         if (this.getChunkAtAsync == null) {
             return this.plugin.getDhSupport().getScheduler().runOnMainThread(() -> this.loadChunk(x, z));
         }
@@ -306,6 +393,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public CompletableFuture<Boolean> loadOrGenerateChunkAsync(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return CompletableFuture.completedFuture(true);
+        }
+
         if (this.getChunkAtAsync == null) {
             return this.plugin.getDhSupport().getScheduler().runOnMainThread(() -> this.loadOrGenerateChunk(x, z));
         }
@@ -325,6 +416,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean unloadChunk(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -334,6 +429,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean unloadChunkAsync(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -343,6 +442,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean discardChunk(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return true;
+        }
+
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
@@ -368,20 +471,46 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
+    public int getSpawnX()
+    {
+        return this.world.getSpawnLocation().getBlockX();
+    }
+
+    @Override
+    public int getSpawnY()
+    {
+        return this.world.getSpawnLocation().getBlockY();
+    }
+
+    @Override
+    public int getSpawnZ()
+    {
+        return this.world.getSpawnLocation().getBlockZ();
+    }
+
+    @Override
     public int getHighestYAt(int x, int z)
     {
+        if (this.isDummyMode()) {
+            return Collections.max(this.getDummyColumn().keySet());
+        }
+
         return this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z));
     }
 
     @Override
-    public String getBiomeAt(int x, int z)
+    public String getBiomeAt(int x, int y, int z)
     {
-        NamespacedKey key = this.getChunk(x, z).getBiome(Coordinates.blockToChunkRelative(x), this.getSeaLevel(), Coordinates.blockToChunkRelative(z)).getKey();
+        if (this.isDummyMode()) {
+            return "minecraft:plains";
+        }
+
+        NamespacedKey key = this.getChunk(x, z).getBiome(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey();
 
         // If the server just reports "custom" and we have access to getBiomeKey, try to get the correct biome name.
         if (key.toString().equals("minecraft:custom") && this.getBiomeKey != null) {
             try {
-                key = (NamespacedKey) this.getBiomeKey.invoke(this.unsafeValues, this.world, x, this.getSeaLevel(), z);
+                key = (NamespacedKey) this.getBiomeKey.invoke(this.unsafeValues, this.world, x, y, z);
             } catch (IllegalAccessException | InvocationTargetException exception) {
                 throw new RuntimeException(exception);
             }
@@ -391,14 +520,30 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
+    public String getBiomeAt(int x, int z)
+    {
+        return this.getBiomeAt(x, this.getSeaLevel(), z);
+    }
+
+    @Override
     public String getMaterialAt(int x, int y, int z)
     {
-        return this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+        if (this.isDummyMode()) {
+            return this.getDummyMaterialAt(y);
+        }
+
+        String material = this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+
+        return Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + "." + Utils.unNamespaceKey(material), material));
     }
 
     @Override
     public String getBlockStateAsStringAt(int x, int y, int z)
     {
+        if (this.isDummyMode()) {
+            return "";
+        }
+
         return this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
     }
 
@@ -429,12 +574,20 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public byte getBlockLightAt(int x, int y, int z)
     {
+        if (this.isDummyMode()) {
+            return 0;
+        }
+
         return (byte) this.getChunk(x, z).getBlockEmittedLight(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z));
     }
 
     @Override
     public byte getSkyLightAt(int x, int y, int z)
     {
+        if (this.isDummyMode()) {
+            return (byte) (this.getDummyMaterialAt(y + 1).equals("minecraft:air") ? 15 : 0);
+        }
+
         return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z));
     }
 
@@ -447,6 +600,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public boolean isBeacon(int x, int y, int z)
     {
+        if (this.isDummyMode()) {
+            return false;
+        }
+
         if (!this.getMaterialAt(x, y, z).equals("minecraft:beacon")) {
             return false;
         }
@@ -456,5 +613,65 @@ public class BukkitWorldInterface implements WorldInterface
                 ((Beacon) this.world.getBlockAt(x, y, z).getState()).getTier() > 0
             )
             .join();
+    }
+
+    @Override
+    public int getBeaconColor(int x, int y, int z)
+    {
+        int skipped = 0;
+        int n = 0;
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+
+        int maxY = this.getMaxY();
+
+        while (y < maxY) {
+            y++;
+
+            String material = Utils.unNamespaceKey(this.getMaterialAt(x, y, z)).toUpperCase();
+
+            if (!material.endsWith("_STAINED_GLASS") && !material.endsWith("_STAINED_GLASS_PANE")) {
+                skipped++;
+
+                if (skipped >= 5) {
+                    break;
+                }
+
+                continue;
+            }
+
+            n++;
+
+            Color color = null;
+
+            for (DyeColor testColor : DyeColor.values()) {
+                if (material.startsWith(testColor.name())) {
+                    color = testColor.getColor();
+                    break;
+                }
+            }
+
+            if (color == null) {
+                this.getLogger().warning("Encountered unknown color: " + material);
+                continue;
+            }
+
+            red += color.getRed();
+            green += color.getGreen();
+            blue += color.getBlue();
+
+            if (n > 1) {
+                red /= 2;
+                green /= 2;
+                blue /= 2;
+            }
+        }
+
+        if (n == 0) {
+            return Color.WHITE.asRGB();
+        }
+
+        return (new java.awt.Color(red, green, blue)).getRGB();
     }
 }

@@ -109,7 +109,7 @@ public class PlayerConfigHandler
                     }
                 }
 
-                clientConfig.set(key, keepValue);
+                clientConfig.set(key, keepValue == null ? -1 : keepValue);
             }
 
             this.dhSupport.setPlayerConfiguration(configMessage.getSender(), clientConfig);

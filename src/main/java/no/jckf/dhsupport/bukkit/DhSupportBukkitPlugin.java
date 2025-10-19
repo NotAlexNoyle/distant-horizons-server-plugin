@@ -50,21 +50,19 @@ public class DhSupportBukkitPlugin extends JavaPlugin
     public void onEnable()
     {
         String pluginVersion = "N/A";
-        String mcVersion = "N/A";
 
         try {
             YamlConfiguration meta = new YamlConfiguration();
             meta.load(new InputStreamReader(this.getResource("plugin.yml")));
 
             pluginVersion = meta.getString("version");
-            mcVersion = meta.getString("mc-version");
         } catch (Exception exception) {
 
         }
 
-        this.getLogger().info("I am DHS " + pluginVersion + " for MC " + mcVersion + ".");
+        this.getLogger().info("I am DHS " + pluginVersion + ".");
 
-        this.dhSupport = new DhSupport(pluginVersion, mcVersion);
+        this.dhSupport = new DhSupport(pluginVersion);
         this.dhSupport.setLogger(this.getLogger());
         this.dhSupport.setDataDirectory(this.getDataFolder().getAbsolutePath());
 

@@ -1,0 +1,107 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '8.3.8'
+}
+
+group = 'no.jckf.dhs'
+version = '0.11.0'
+description = 'Distant Horizons Support'
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+def paperVersions = [
+    '1.16.5',
+]
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url = 'https://jitpack.io/' }
+}
+
+configurations {
+    shade
+    implementation {
+        extendsFrom shade
+    }
+}
+
+dependencies {
+    compileOnly 'org.jetbrains:annotations:25.0.0'
+
+    implementation 'com.google.guava:guava:33.3.1-jre'
+
+    shade 'org.bstats:bstats-bukkit:3.1.0'
+    shade 'org.json:json:20240303'
+    shade 'org.tukaani:xz:1.10'
+    shade 'com.github.technicallycoded:FoliaLib:v0.4.3'
+
+    testImplementation 'junit:junit:4.11'
+}
+
+paperVersions.each { mcVersion ->
+    def taskSuffix = mcVersion.replace('.', '_')
+    def taskName = "buildJar_${taskSuffix}"
+    def outputDir = file("build/libs/$mcVersion")
+
+    def apiVersion = mcVersion.tokenize('.')[0..1].join('.')
+
+    def sourceSetName = "main"
+
+    // Custom processResources task per version
+    def processTask = tasks.register("processResources_${taskSuffix}", Copy) {
+        from(sourceSets[sourceSetName].resources.srcDirs)
+        into("$buildDir/resources-processed/$mcVersion")
+
+        include '**/*.yml'
+
+        expand(
+            version: project.version,
+            'mainClass': 'no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin',
+            'mcApiVersion': apiVersion,
+        )
+    }
+
+    configurations {
+        "compileOnly${mcVersion}" {
+            canBeResolved = true
+        }
+    }
+
+    dependencies {
+        compileOnly "com.destroystokyo.paper:paper-api:${mcVersion}-R0.1-SNAPSHOT"
+        //compileOnly "io.papermc.paper:paper-api:${mcVersion}-R0.1-SNAPSHOT"
+    }
+
+    task(taskName, type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+        group = 'build'
+
+        archiveBaseName.set("DistantHorizonsSupport")
+        archiveVersion.set(version)
+        destinationDirectory.set(outputDir)
+
+        // Use processed resources as input
+        // Exclude raw YAML to avoid unprocessed plugin.yml in final JAR
+        from(sourceSets.main.output) {
+            exclude '**/*.yml'
+        }
+
+        from("$buildDir/resources-processed/$mcVersion")
+
+        configurations = [project.configurations.shade]
+
+        relocate 'org.bstats', 'no.jckf.dhsupport.bstats'
+        relocate 'org.json', 'no.jckf.dhsupport.json'
+        relocate 'org.tukaani.xz', 'no.jckf.dhsupport.xz'
+        relocate 'com.tcoded.folialib', 'no.jckf.dhsupport.folialib'
+
+        exclude 'org/jetbrains/**'
+        exclude 'org/intellij/**'
+
+        dependsOn processTask
+    }
+
+    build.dependsOn(taskName)
+}

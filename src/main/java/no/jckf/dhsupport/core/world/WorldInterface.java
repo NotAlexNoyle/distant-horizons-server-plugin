@@ -43,6 +43,10 @@ public interface WorldInterface extends Configurable
 
     @Nullable Integer getWorldBorderRadius();
 
+    void setDummyMode(boolean enable);
+
+    boolean isDummyMode();
+
     boolean chunkExists(int x, int z);
 
     boolean isChunkLoaded(int x, int z);
@@ -67,9 +71,17 @@ public interface WorldInterface extends Configurable
 
     int getSeaLevel();
 
+    int getSpawnX();
+
+    int getSpawnY();
+
+    int getSpawnZ();
+
     int getHighestYAt(int x, int z);
 
     String getBiomeAt(int x, int z);
+
+    String getBiomeAt(int x, int y, int z);
 
     String getMaterialAt(int x, int y, int z);
 
@@ -82,4 +94,6 @@ public interface WorldInterface extends Configurable
     byte getSkyLightAt(int x, int y, int z);
 
     boolean isBeacon(int x, int y, int z);
+
+    int getBeaconColor(int x, int y, int z);
 }

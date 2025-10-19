@@ -1,49 +1,29 @@
 include:
   - template: Security/SAST.gitlab-ci.yml
 
-variables:
-  MAVEN_OPTS: >-
-    -Dhttps.protocols=TLSv1.2
-    -Dmaven.repo.local=.m2/repository
-    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
-    -Dorg.slf4j.simpleLogger.showDateTime=true
-    -Djava.awt.headless=true
-
-  MAVEN_CLI_OPTS: >-
-    --batch-mode
-    --errors
-    --fail-at-end
-    --show-version
-    -DinstallAtEnd=true
-    -DdeployAtEnd=true  
-
 stages:
   - build
   - test
 
 default:
-  image: maven:3.9-eclipse-temurin-21-alpine
+  image: eclipse-temurin:21
 
   cache:
-    key: maven-repo-${CI_COMMIT_REF_SLUG}
+    key: gradle-${CI_COMMIT_REF_SLUG}
     unprotect: true
 
     paths:
-      - .m2/repository
+      - .gradle
 
 build:
   stage: build
 
-  parallel:
-    matrix:
-      - MC_VER: [ "1.16.5", "1.17.1", "1.18.2", "1.19.2", "1.19.4", "1.20.1", "1.20.2", "1.20.4", "1.20.6", "1.21.1", "1.21.3", "1.21.4", "1.21.5", "1.21.7" ]
-
   script:
-    - mvn package --projects pom-${MC_VER}.xml ${MAVEN_CLI_OPTS}
-    - mv jars/*.jar ./
+    - ./gradlew build
+    - mv build/libs/*/*.jar ./
 
   artifacts:
-    name: DHS-${MC_VER}-${CI_COMMIT_REF_SLUG}-${CI_JOB_STARTED_AT}
+    name: DistantHorizonsSupport-${CI_COMMIT_REF_SLUG}-${CI_JOB_STARTED_AT}
 
     paths:
       - "./*.jar"

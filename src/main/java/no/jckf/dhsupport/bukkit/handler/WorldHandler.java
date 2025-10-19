@@ -20,25 +20,39 @@ package no.jckf.dhsupport.bukkit.handler;
 
 import no.jckf.dhsupport.bukkit.BukkitWorldInterface;
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
+import no.jckf.dhsupport.core.configuration.DhsConfig;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
-import org.bukkit.event.inventory.FurnaceBurnEvent;
-import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class WorldHandler implements Listener
 {
+    protected static final String[] EVENT_METHOD_NAMES = { "blockList", "getBlocks", "getBlock" };
+
     protected DhSupportBukkitPlugin plugin;
+
+    protected Map<String, Method> eventMethods = new HashMap<>();
 
     public WorldHandler(DhSupportBukkitPlugin plugin)
     {
         this.plugin = plugin;
 
         this.plugin.getServer().getWorlds().forEach(this::addWorldInterface);
+
+        this.registerUpdateListeners();
     }
 
     protected void addWorldInterface(World world)
@@ -57,9 +71,90 @@ public class WorldHandler implements Listener
         this.plugin.getDhSupport().setWorldInterface(world.getUID(), null);
     }
 
-    protected void touchLod(Location location)
+    protected void touchLod(Location location, String reason)
     {
-        this.plugin.getDhSupport().touchLod(location.getWorld().getUID(), location.getBlockX(), location.getBlockZ());
+        this.plugin.getDhSupport().touchLod(location.getWorld().getUID(), location.getBlockX(), location.getBlockZ(), reason);
+    }
+
+    protected void registerUpdateListeners()
+    {
+        Listener dummyListener = new Listener() {};
+
+        for (String eventClassName : this.plugin.getDhSupport().getConfig().getStringList(DhsConfig.UPDATE_EVENTS)) {
+            try {
+                Class<? extends Event> eventClass = Class.forName(eventClassName).asSubclass(Event.class);
+
+                this.plugin.getServer().getPluginManager().registerEvent(
+                    eventClass,
+                    dummyListener,
+                    EventPriority.MONITOR,
+                    (listener, event) -> this.handleUpdateEvent(event),
+                    this.plugin
+                );
+
+                this.plugin.getDhSupport().info("Listening for " + eventClassName + ".");
+            } catch (ClassNotFoundException exception) {
+                this.plugin.getDhSupport().warning("Could not find event class: " + eventClassName);
+            }
+        }
+    }
+
+    protected void handleUpdateEvent(Event event)
+    {
+        Class<? extends Event> eventClass = event.getClass();
+        String eventClassName = eventClass.getName();
+        Method method = null;
+
+        if (this.eventMethods.containsKey(eventClassName)) {
+            method = this.eventMethods.get(eventClassName);
+
+            // We've seen this event before, but don't know how to handle it.
+            if (method == null) {
+                return;
+            }
+        } else {
+            for (String methodName : EVENT_METHOD_NAMES) {
+                try {
+                    method = eventClass.getMethod(methodName);
+                    break;
+                } catch (NoSuchMethodException exception) {
+
+                }
+            }
+
+            // Store the result, even if it is null.
+            this.eventMethods.put(eventClassName, method);
+
+            // This is the first time we see this even, and we don't know how to handle it.
+            if (method == null) {
+                this.plugin.getDhSupport().warning("Unsure how to handle event: " + eventClass.getName());
+                return;
+            }
+        }
+
+        List<?> list;
+
+        try {
+            Object result = method.invoke(event);
+
+            if (result instanceof List) {
+                list = (List<?>) result;
+            } else {
+                list = List.of(result);
+            }
+        } catch (IllegalAccessException | InvocationTargetException exception) {
+            throw new RuntimeException(exception);
+        }
+
+        for (Object entry : list) {
+            if (entry instanceof Block block) {
+                this.touchLod(block.getLocation(), eventClassName);
+            } else if (entry instanceof BlockState state) {
+                this.touchLod(state.getLocation(), eventClassName);
+            } else {
+                this.plugin.getDhSupport().warning("Unknown block " + entry + " from event: " + eventClassName);
+            }
+        }
     }
 
     @EventHandler
@@ -73,117 +168,4 @@ public class WorldHandler implements Listener
     {
         this.removeWorldInterface(worldUnload.getWorld());
     }
-
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent blockPlace)
-    {
-        this.touchLod(blockPlace.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onBlockBreak(BlockBreakEvent blockBreak)
-    {
-        this.touchLod(blockBreak.getBlock().getLocation());
-    }
-
-// FIXME messes with 1.16.5 compilation
-//    @EventHandler
-//    public void onTNTPrime(TNTPrimeEvent blockBreak)
-//    {
-//        this.touchLod(blockBreak.getBlock().getLocation());
-//    }
-
-    @EventHandler
-    public void onBlockExplode(BlockExplodeEvent blockExplode)
-    {
-        for (var block : blockExplode.blockList()) {
-            this.touchLod(block.getLocation());
-        }
-    }
-
-
-    @EventHandler
-    public void onBlockIgnite(BlockIgniteEvent blockIgnite)
-    {
-        this.touchLod(blockIgnite.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onBlockBurn(BlockBurnEvent blockBurn)
-    {
-        this.touchLod(blockBurn.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onLeavesDecay(LeavesDecayEvent leavesDecay)
-    {
-        this.touchLod(leavesDecay.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onBlockFade(BlockFadeEvent blockFade)
-    {
-        this.touchLod(blockFade.getBlock().getLocation());
-    }
-
-
-    @EventHandler
-    public void onBlockGrow(BlockGrowEvent blockGrow)
-    {
-        this.touchLod(blockGrow.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onMoistureChange(MoistureChangeEvent moistureChange)
-    {
-        this.touchLod(moistureChange.getBlock().getLocation());
-    }
-
-
-    @EventHandler
-    public void onFurnaceBurn(FurnaceBurnEvent furnaceBurn)
-    {
-        this.touchLod(furnaceBurn.getBlock().getLocation());
-    }
-
-
-    @EventHandler
-    public void onBlockRedstone(BlockRedstoneEvent blockRedstone)
-    {
-        this.touchLod(blockRedstone.getBlock().getLocation());
-    }
-
-    @EventHandler
-    public void onBlockPistonExtend(BlockPistonExtendEvent blockPistonExtend)
-    {
-        for (var block : blockPistonExtend.getBlocks()) {
-            this.touchLod(block.getLocation());
-        }
-    }
-
-    @EventHandler
-    public void onBlockPistonRetract(BlockPistonRetractEvent blockPistonRetract)
-    {
-        for (var block : blockPistonRetract.getBlocks()) {
-            this.touchLod(block.getLocation());
-        }
-    }
-
-
-    @EventHandler
-    public void onStructureGrow(StructureGrowEvent structureGrow)
-    {
-        for (var blockState : structureGrow.getBlocks()) {
-            this.touchLod(blockState.getLocation());
-        }
-    }
-
-    @EventHandler
-    public void onSpongeAbsorb(SpongeAbsorbEvent spongeAbsorb)
-    {
-        for (var blockState : spongeAbsorb.getBlocks()) {
-            this.touchLod(blockState.getLocation());
-        }
-    }
-
 }

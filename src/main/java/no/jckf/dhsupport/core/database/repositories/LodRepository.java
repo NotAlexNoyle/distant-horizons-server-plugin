@@ -84,6 +84,8 @@ public class LodRepository
         } catch (SQLException exception) {
             this.getLogger().warning("Could not save LOD: " + exception);
 
+            this.database.clearQueryCache();
+
             return null;
         }
     }
@@ -115,6 +117,8 @@ public class LodRepository
         } catch (SQLException exception) {
             this.getLogger().warning("Could not load LOD: " + exception);
 
+            this.database.clearQueryCache();
+
             return null;
         }
     }
@@ -134,6 +138,8 @@ public class LodRepository
         } catch (SQLException exception) {
             this.getLogger().warning("Could not check LOD existence: " + exception);
 
+            this.database.clearQueryCache();
+
             return false;
         }
     }
@@ -152,6 +158,8 @@ public class LodRepository
             return affectedRows > 0;
         } catch (SQLException exception) {
             this.getLogger().warning("Could not delete LOD: " + exception);
+
+            this.database.clearQueryCache();
 
             return false;
         }
