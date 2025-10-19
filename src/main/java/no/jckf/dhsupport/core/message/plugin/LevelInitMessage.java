@@ -23,18 +23,30 @@ import no.jckf.dhsupport.core.bytestream.Encoder;
 
 public class LevelInitMessage extends PluginMessage
 {
-    protected String key;
+    protected String serverKey;
+
+    protected String levelKey;
 
     protected long time;
 
-    public void setKey(String key)
+    public void setServerKey(String serverKey)
     {
-        this.key = key;
+        this.serverKey = serverKey;
     }
 
-    public String getKey()
+    public String getServerKey()
     {
-        return this.key;
+        return this.serverKey;
+    }
+
+    public void setLevelKey(String levelKey)
+    {
+        this.levelKey = levelKey;
+    }
+
+    public String getLevelKey()
+    {
+        return this.levelKey;
     }
 
     public void setTime(long time)
@@ -50,14 +62,16 @@ public class LevelInitMessage extends PluginMessage
     @Override
     public void encode(Encoder encoder)
     {
-        encoder.writeShortString(this.key);
+        encoder.writeShortString(this.serverKey);
+        encoder.writeShortString(this.levelKey);
         encoder.writeLong(this.time);
     }
 
     @Override
     public void decode(Decoder decoder)
     {
-        this.key = decoder.readShortString();
+        this.serverKey = decoder.readShortString();
+        this.levelKey = decoder.readShortString();
         this.time = decoder.readLong();
     }
 }
