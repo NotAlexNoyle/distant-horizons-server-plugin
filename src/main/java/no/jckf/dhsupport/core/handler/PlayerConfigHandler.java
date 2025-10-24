@@ -64,7 +64,7 @@ public class PlayerConfigHandler
             this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
 
             LevelInitMessage levelInitResponse = new LevelInitMessage();
-            levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY));
+            levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
             levelInitResponse.setLevelKey(levelKey);
             levelInitResponse.setTime(System.currentTimeMillis());
             this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), levelInitResponse);
