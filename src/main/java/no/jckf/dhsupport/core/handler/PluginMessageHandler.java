@@ -94,6 +94,10 @@ public class PluginMessageHandler
             return;
         }
 
+        if (message instanceof CloseReasonMessage) {
+            throw new RuntimeException(((CloseReasonMessage) message).getReason());
+        }
+
         message.setSender(senderUuid);
 
         this.eventBus.dispatch(message);
@@ -112,7 +116,7 @@ public class PluginMessageHandler
             CloseReasonMessage closeReasonMessage = new CloseReasonMessage();
             closeReasonMessage.setReason((protocolVersion > this.protocolVersion ? "Server" : "Client") + " is outdated.");
             this.sendPluginMessage(senderUuid, closeReasonMessage);
-            return null;
+            return closeReasonMessage;
         }
 
         // Read the message type ID.
