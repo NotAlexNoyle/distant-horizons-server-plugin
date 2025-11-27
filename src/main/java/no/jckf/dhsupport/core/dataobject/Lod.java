@@ -79,6 +79,14 @@ public class Lod extends DataObject
         encoder.write(compressed);
     }
 
+    protected void encodeAdjacentData(Encoder encoder)
+    {
+        encoder.writeInt(0);
+        encoder.writeInt(0);
+        encoder.writeInt(0);
+        encoder.writeInt(0);
+    }
+
     protected void encodeColumnGenerationStep(Encoder encoder)
     {
         byte[] bytesToCompress = new byte[Lod.width * Lod.width];
@@ -126,6 +134,7 @@ public class Lod extends DataObject
         encoder.writeInt(0); // Checksum
 
         this.encodeData(encoder);
+        this.encodeAdjacentData(encoder);
         this.encodeColumnGenerationStep(encoder);
         this.encodeWorldCompressionType(encoder);
         this.encodeMappings(encoder);
