@@ -49,12 +49,21 @@ public class BukkitScheduler implements Scheduler
         this.executor = new ThreadPoolExecutor(
             threadCount, threadCount,
             60, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>()
+            new LinkedBlockingQueue<>(),
+            new ThreadFactory() {
+                private final java.util.concurrent.atomic.AtomicInteger threadNumber = new java.util.concurrent.atomic.AtomicInteger(1);
+
+                @Override
+                public Thread newThread(Runnable r)
+                {
+                    return new Thread(r, "DHSupport-Worker-" + threadNumber.getAndIncrement());
+                }
+            }
         );
 
         ((ThreadPoolExecutor) this.executor).allowCoreThreadTimeOut(true);
 
-        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "DHSupport-Scheduler"));
 
         this.plugin.getDhSupport().info("Using " + Utils.ucFirst(this.foliaLib.getImplType().name().toLowerCase().replace('_', ' ')) + " scheduler.");
     }
