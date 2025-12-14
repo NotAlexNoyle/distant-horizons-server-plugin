@@ -61,7 +61,7 @@ public class PlayerConfigHandler
                 levelKey = levelKeyPrefix + levelKey;
             }
 
-            this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
+            //this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
 
             LevelInitMessage levelInitResponse = new LevelInitMessage();
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
