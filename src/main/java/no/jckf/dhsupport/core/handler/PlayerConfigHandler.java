@@ -52,8 +52,6 @@ public class PlayerConfigHandler
             String permission = USAGE_PERMISSION.formatted(world.getName());
             boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
 
-            double coordinateScale = world.getCoordinateScale();
-
             Configuration dhsConfig = world.getConfig();
 
             String levelKeyPrefix = dhsConfig.getString(DhsConfig.LEVEL_KEY_PREFIX);
@@ -63,12 +61,13 @@ public class PlayerConfigHandler
                 levelKey = levelKeyPrefix + levelKey;
             }
 
-            this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
+            //this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
 
-            LevelInitMessage levelKeyResponse = new LevelInitMessage();
-            levelKeyResponse.setKey(levelKey);
-            levelKeyResponse.setTime(System.currentTimeMillis());
-            this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), levelKeyResponse);
+            LevelInitMessage levelInitResponse = new LevelInitMessage();
+            levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
+            levelInitResponse.setLevelKey(levelKey);
+            levelInitResponse.setTime(System.currentTimeMillis());
+            this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), levelInitResponse);
 
             Configuration clientConfig = configMessage.toConfiguration();
 

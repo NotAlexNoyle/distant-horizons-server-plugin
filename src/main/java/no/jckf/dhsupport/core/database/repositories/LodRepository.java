@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 
 public class LodRepository
 {
-    protected static final String SQL_SAVE_LOD = "REPLACE INTO lods (worldId, x, z, data, beacons, timestamp) VALUES (?, ?, ?, ?, ?, ?)";
+    protected static final String SQL_SAVE_LOD = "REPLACE INTO lods (worldId, x, z, data, beacons, timestamp, version) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     protected static final String SQL_LOAD_LOD = "SELECT data, beacons, timestamp FROM lods WHERE worldId = ? AND x = ? AND z = ? LIMIT 1";
 
@@ -58,7 +58,7 @@ public class LodRepository
         return this.logger;
     }
 
-    public LodModel saveLod(UUID worldId, int sectionX, int sectionZ, byte[] data, byte[] beacons)
+    public LodModel saveLod(UUID worldId, int sectionX, int sectionZ, byte[] data, byte[] beacons, int version)
     {
         int timestamp = (int) (System.currentTimeMillis() / 1000);
 
@@ -71,6 +71,7 @@ public class LodRepository
             statement.setBytes(4, data);
             statement.setBytes(5, beacons);
             statement.setInt(6, timestamp);
+            statement.setInt(7, version);
 
             statement.executeUpdate();
 
@@ -80,7 +81,8 @@ public class LodRepository
                 .setZ(sectionZ)
                 .setData(data)
                 .setBeacons(beacons)
-                .setTimestamp(timestamp);
+                .setTimestamp(timestamp)
+                .setVersion(version);
         } catch (SQLException exception) {
             this.getLogger().warning("Could not save LOD: " + exception);
 

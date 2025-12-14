@@ -92,6 +92,12 @@ builder_resolution: 2
 # Default: true
 #include_non-colliding_top_layer: false
 
+# If your server is accessible via multiple different addresses, consider setting a level key to let clients know
+# that even though the address is different; it's the same server.
+# This value must be GLOBALLY UNIQUE! No other server on planet Earth should have the same server key as you.
+# Optional.
+#server_key:
+
 # When running DHS on a proxied server, set this to a value that is unique to this specific server.
 # Optional.
 #level_key_prefix:

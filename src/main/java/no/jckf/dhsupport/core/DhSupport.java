@@ -23,7 +23,9 @@ import no.jckf.dhsupport.core.configuration.Configurable;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.database.Database;
+import no.jckf.dhsupport.core.database.migrations.AddLodVersionColumn;
 import no.jckf.dhsupport.core.database.migrations.CreateLodsTable;
+import no.jckf.dhsupport.core.database.migrations.DeleteLodsWithoutVersion;
 import no.jckf.dhsupport.core.database.models.LodModel;
 import no.jckf.dhsupport.core.database.repositories.AsyncLodRepository;
 import no.jckf.dhsupport.core.dataobject.Lod;
@@ -112,6 +114,8 @@ public class DhSupport implements Configurable
             );
 
             this.database.addMigration(CreateLodsTable.class);
+            this.database.addMigration(AddLodVersionColumn.class);
+            this.database.addMigration(DeleteLodsWithoutVersion.class);
 
             this.database.migrate();
         } catch (Exception exception) {
@@ -472,7 +476,8 @@ public class DhSupport implements Configurable
                         position.getX(),
                         position.getZ(),
                         lodEncoder.toByteArray(),
-                        beaconEncoder.toByteArray()
+                        beaconEncoder.toByteArray(),
+                        LodModel.VERSION
                     );
                 })
                 .thenCompose((f) -> f); // Unwrap the nested future.

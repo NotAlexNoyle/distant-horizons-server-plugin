@@ -21,7 +21,8 @@ package no.jckf.dhsupport.core.database;
 import no.jckf.dhsupport.core.database.migrations.Migration;
 
 import java.sql.*;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +35,7 @@ public class Database
 
     protected Map<String, PreparedStatement> preparedStatements = new ConcurrentHashMap<>();
 
-    protected Map<String, Class<? extends Migration>> migrations = new HashMap<>();
+    protected List<Class<? extends Migration>> migrations = new ArrayList<>();
 
     protected CompletableFuture<?> optimizing;
 
@@ -103,7 +104,7 @@ public class Database
 
     public void addMigration(Class<? extends Migration> migration)
     {
-        this.migrations.put(migration.getSimpleName(), migration);
+        this.migrations.add(migration);
     }
 
     public boolean hasMigrationRan(String name) throws SQLException
@@ -135,12 +136,14 @@ public class Database
     {
         this.createMigrationsTable();
 
-        for (String name : this.migrations.keySet()) {
+        for (Class<? extends Migration> migrationClass : this.migrations) {
+            String name = migrationClass.getSimpleName();
+
             if (this.hasMigrationRan(name)) {
                 continue;
             }
 
-            Migration migration = this.migrations.get(name).getConstructor(this.getClass()).newInstance(this);
+            Migration migration = migrationClass.getConstructor(this.getClass()).newInstance(this);
 
             migration.up();
 

@@ -48,6 +48,8 @@ public abstract class DhsConfig
 
     public static String SCHEDULER_THREADS = "scheduler_threads";
 
+    public static String SERVER_KEY = "server_key";
+
     public static String LEVEL_KEY_PREFIX = "level_key_prefix";
 
     public static String BORDER_CENTER_X = "border_center_x";

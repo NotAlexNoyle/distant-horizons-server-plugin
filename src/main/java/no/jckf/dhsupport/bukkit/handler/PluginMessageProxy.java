@@ -21,6 +21,7 @@ package no.jckf.dhsupport.bukkit.handler;
 import no.jckf.dhsupport.bukkit.BukkitPluginMessageSender;
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
 import no.jckf.dhsupport.core.handler.PluginMessageHandler;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
@@ -55,6 +56,10 @@ public class PluginMessageProxy extends Handler implements PluginMessageListener
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte[] message)
     {
-        this.pluginMessageHandler.onPluginMessageReceived(channel, player.getUniqueId(), message);
+        try {
+            this.pluginMessageHandler.onPluginMessageReceived(channel, player.getUniqueId(), message);
+        } catch (RuntimeException exception) {
+            player.sendMessage(ChatColor.RED + "Distant Horizons: " + exception.getMessage());
+        }
     }
 }

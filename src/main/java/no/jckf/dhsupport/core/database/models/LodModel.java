@@ -22,6 +22,8 @@ import java.util.UUID;
 
 public class LodModel extends Model
 {
+    public static int VERSION = 2;
+
     public static LodModel create()
     {
         return new LodModel();
@@ -38,6 +40,8 @@ public class LodModel extends Model
     protected byte[] beacons;
 
     protected int timestamp;
+
+    protected int version;
 
     public LodModel setWorldId(UUID worldId)
     {
@@ -60,7 +64,7 @@ public class LodModel extends Model
 
     public int getX()
     {
-        return x;
+        return this.x;
     }
 
     public LodModel setZ(int z)
@@ -72,7 +76,7 @@ public class LodModel extends Model
 
     public int getZ()
     {
-        return z;
+        return this.z;
     }
 
     public LodModel setData(byte[] data)
@@ -84,7 +88,7 @@ public class LodModel extends Model
 
     public byte[] getData()
     {
-        return data;
+        return this.data;
     }
 
     public LodModel setBeacons(byte[] beacons)
@@ -96,7 +100,7 @@ public class LodModel extends Model
 
     public byte[] getBeacons()
     {
-        return beacons;
+        return this.beacons;
     }
 
     public LodModel setTimestamp(int timestamp)
@@ -109,6 +113,18 @@ public class LodModel extends Model
     public int getTimestamp()
     {
         return this.timestamp;
+    }
+
+    public LodModel setVersion(int version)
+    {
+        this.version = version;
+
+        return this;
+    }
+
+    public int getVersion()
+    {
+        return this.version;
     }
 
     public String toString()
