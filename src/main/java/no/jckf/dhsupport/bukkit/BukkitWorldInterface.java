@@ -626,7 +626,7 @@ public class BukkitWorldInterface implements WorldInterface
 
         int maxY = this.getMaxY();
 
-        while (y < maxY) {
+        while (y + 1 < maxY) {
             y++;
 
             String material = Utils.unNamespaceKey(this.getMaterialAt(x, y, z)).toUpperCase();
