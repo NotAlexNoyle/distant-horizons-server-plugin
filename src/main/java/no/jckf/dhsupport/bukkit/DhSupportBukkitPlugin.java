@@ -27,6 +27,7 @@ import no.jckf.dhsupport.bukkit.handler.WorldHandler;
 import no.jckf.dhsupport.core.DhSupport;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SingleLineChart;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -67,6 +68,7 @@ public class DhSupportBukkitPlugin extends JavaPlugin
         this.dhSupport.setDataDirectory(this.getDataFolder().getAbsolutePath());
 
         this.metrics = new Metrics(this, 21843);
+        this.metrics.addCustomChart(new SingleLineChart("dh_users", () -> this.dhSupport.getPlayerConfigurations().size()));
 
         this.loadDhsConfig();
 
