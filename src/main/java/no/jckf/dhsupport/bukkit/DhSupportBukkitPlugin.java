@@ -25,8 +25,10 @@ import no.jckf.dhsupport.bukkit.handler.PlayerHandler;
 import no.jckf.dhsupport.bukkit.handler.PluginMessageProxy;
 import no.jckf.dhsupport.bukkit.handler.WorldHandler;
 import no.jckf.dhsupport.core.DhSupport;
+import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.MultiLineChart;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -34,6 +36,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nullable;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DhSupportBukkitPlugin extends JavaPlugin
 {
@@ -69,6 +73,17 @@ public class DhSupportBukkitPlugin extends JavaPlugin
 
         this.metrics = new Metrics(this, 21843);
         this.metrics.addCustomChart(new SingleLineChart("dh_users", () -> this.dhSupport.getPlayerConfigurations().size()));
+        this.metrics.addCustomChart(new MultiLineChart("dh_render_distance", () -> {
+            Map<String, Integer> renderDistances = new HashMap<>();
+
+            for (Configuration playerConfig : this.dhSupport.getPlayerConfigurations().values()) {
+                String rd = String.valueOf(playerConfig.getInt(DhsConfig.RENDER_DISTANCE));
+
+                renderDistances.put(rd, renderDistances.getOrDefault(rd, 0) + 1);
+            }
+
+            return renderDistances;
+        }));
 
         this.loadDhsConfig();
 
