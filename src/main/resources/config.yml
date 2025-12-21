@@ -190,6 +190,7 @@ update_events:
 #  - org.bukkit.event.block.SpongeAbsorbEvent
 #  - org.bukkit.event.inventory.FurnaceBurnEvent
   - org.bukkit.event.world.StructureGrowEvent
+  - org.bukkit.event.world.ChunkPopulateEvent
 
 # Number of worker threads used to generate LODs.
 # Required.
