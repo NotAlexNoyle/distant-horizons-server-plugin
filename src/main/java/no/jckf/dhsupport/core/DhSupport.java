@@ -340,7 +340,11 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(builder::generate)
+        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(() -> {
+                this.joinPauseState();
+
+                return builder.generate();
+            })
             .thenApply((lod) -> {
                 this.queuedBuilders.remove(key);
 
@@ -376,8 +380,6 @@ public class DhSupport implements Configurable
 
     protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position, boolean manageChunks)
     {
-        this.joinPauseState();
-
         int worldX = Coordinates.sectionToBlock(position.getX());
         int worldZ = Coordinates.sectionToBlock(position.getZ());
 
