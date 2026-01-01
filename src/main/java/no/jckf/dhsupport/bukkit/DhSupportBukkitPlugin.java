@@ -114,6 +114,10 @@ public class DhSupportBukkitPlugin extends JavaPlugin
     @Override
     public void onDisable()
     {
+        if (this.metrics != null) {
+            this.metrics.shutdown();
+        }
+
         if (this.scheduler != null) {
             this.scheduler.cancelTasks();
         }
