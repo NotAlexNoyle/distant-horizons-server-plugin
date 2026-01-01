@@ -129,6 +129,14 @@ material_map:
   iron_ore: stone
   diamond_ore: stone
 
+# Vertical distance to offset light data.
+# This is a hack to work around SPIGOT-7498. If you're somehow on a 1.20.1 server _with_ this patch, set the value to 0.
+# Optional.
+# Default:
+#  - On 1.20.1: -64
+#  - Any other version: 0
+#light_offset_hack: 0
+
 # World specific settings.
 # You can override any of the above settings on a per-world basis.
 worlds:

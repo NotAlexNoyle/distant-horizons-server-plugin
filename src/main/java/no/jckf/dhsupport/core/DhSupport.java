@@ -56,6 +56,8 @@ public class DhSupport implements Configurable
 {
     protected String pluginVersion;
 
+    protected String gameVersion;
+
     protected String dataDirectory;
 
     protected Database database;
@@ -89,9 +91,10 @@ public class DhSupport implements Configurable
 
     protected Map<UUID, PreGenerator> preGenerators = new HashMap<>();
 
-    public DhSupport(String pluginVersion)
+    public DhSupport(String pluginVersion, String gameVersion)
     {
         this.pluginVersion = pluginVersion;
+        this.gameVersion = gameVersion;
 
         this.configuration = new Configuration();
 
@@ -242,6 +245,16 @@ public class DhSupport implements Configurable
     public AsyncLodRepository getLodRepository()
     {
         return this.lodRepository;
+    }
+
+    public String getPluginVersion()
+    {
+        return this.pluginVersion;
+    }
+
+    public String getGameVersion()
+    {
+        return this.gameVersion;
     }
 
     public Configuration getConfig()

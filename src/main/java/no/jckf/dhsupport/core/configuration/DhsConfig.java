@@ -91,4 +91,6 @@ public abstract class DhsConfig
     public static String MATERIAL_MAP = "material_map";
 
     public static String AD_MESSAGE = "ad_message";
+
+    public static String LIGHT_OFFSET_HACK = "light_offset_hack";
 }
