@@ -70,7 +70,7 @@ max_data_transfer_speed: 0
 
 # How frequently (in seconds) should LODs be updated if world changes are detected?
 # Required.
-# Default: 5
+# Default: 15
 lod_refresh_interval: 15
 
 # Select which LOD builder to use.
@@ -92,7 +92,7 @@ builder_resolution: 2
 # Default: true
 #include_non-colliding_top_layer: false
 
-# If your server is accessible via multiple different addresses, consider setting a level key to let clients know
+# If your server is accessible via multiple different addresses, consider setting a server key to let clients know
 # that even though the address is different; it's the same server.
 # This value must be GLOBALLY UNIQUE! No other server on planet Earth should have the same server key as you.
 # Optional.
