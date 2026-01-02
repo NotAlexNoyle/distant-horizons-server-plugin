@@ -133,7 +133,7 @@ material_map:
 # This is a hack to work around SPIGOT-7498. If you're somehow on a 1.20.1 server _with_ this patch, set the value to 0.
 # Optional.
 # Default:
-#  - On 1.20.1: -64
+#  - On 1.20.1: Minimum build height (-64 for vanilla worlds)
 #  - Any other version: 0
 #light_offset_hack: 0
 

@@ -78,7 +78,7 @@ public class BukkitWorldInterface implements WorldInterface
         this.config = config;
         this.worldConfig = new WorldConfiguration(this, config);
 
-        this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? -64 : 0);
+        this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
     }
 
     public void setLogger(Logger logger)
