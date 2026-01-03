@@ -29,7 +29,7 @@ import org.bukkit.entity.Player;
 
 public class PlayerConfigHandler
 {
-    public final static String USAGE_PERMISSION = "distant_horizons.worlds.%s";
+    public final static String USAGE_PERMISSION = "distant_horizons.worlds.";
 
     protected DhSupport dhSupport;
 
@@ -49,7 +49,7 @@ public class PlayerConfigHandler
 
             WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
 
-            String permission = USAGE_PERMISSION.formatted(world.getName());
+            String permission = USAGE_PERMISSION + world.getName();
             boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
 
             Configuration dhsConfig = world.getConfig();
@@ -95,11 +95,17 @@ public class PlayerConfigHandler
                 }
 
                 if (keepValue == null) {
-                    if (dhsValue instanceof Boolean dhsBool && clientValue instanceof Boolean clientBool) {
+                    if (dhsValue instanceof Boolean && clientValue instanceof Boolean) {
+                        boolean dhsBool = (boolean) dhsValue;
+                        boolean clientBool = (boolean) clientValue;
+
                         keepValue = dhsBool && clientBool;
 
                         //this.dhSupport.getLogger().info("    Server " + (dhsBool ? "Y" : "N") + " or client " + (clientBool ? "Y" : "N") + " = " + ((boolean) keepValue ? "Y" : "N"));
-                    } else if (dhsValue instanceof Integer dhsInt && clientValue instanceof Integer clientInt) {
+                    } else if (dhsValue instanceof Integer && clientValue instanceof Integer) {
+                        int dhsInt = (int) dhsValue;
+                        int clientInt = (int) clientValue;
+
                         keepValue = dhsInt < clientInt ? dhsInt : clientInt;
 
                         //this.dhSupport.getLogger().info("    Server " + dhsInt + " or client " + clientInt + " = " + keepValue);

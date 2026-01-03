@@ -338,7 +338,7 @@ public class DhsCommand implements CommandExecutor
         Duration elapsedTime = generator.getElapsedTime();
 
         float momentaryLodsPerSecond = (float) this.plugin.getDhSupport().getGenerationTracker().getPingsPerSecond();
-        float totalLodsPerSecond = (float) generator.getCompletedRequests() / elapsedTime.toSeconds();
+        float totalLodsPerSecond = (float) generator.getCompletedRequests() / (elapsedTime.getSeconds() + (elapsedTime.getNano() / 1_000_000_000f));
 
         sender.sendMessage(ChatColor.GREEN + "Generation progress: " + ChatColor.YELLOW + String.format("%.2f", generator.getProgress() * 100f) + "%");
         sender.sendMessage(ChatColor.GREEN + "Processed LODs: " + ChatColor.YELLOW + generator.getCompletedRequests() + ChatColor.GREEN + " / " + ChatColor.YELLOW + generator.getTargetRequests() + ChatColor.GREEN + " (" + ChatColor.YELLOW + String.format("%.2f", totalLodsPerSecond * 16) + ChatColor.GREEN + " CPS)");

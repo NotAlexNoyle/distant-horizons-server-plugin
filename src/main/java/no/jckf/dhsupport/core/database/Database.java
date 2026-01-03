@@ -41,6 +41,12 @@ public class Database
 
     public Connection getConnection() throws SQLException
     {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("SQLite JDBC driver missing from plugin jar", e);
+        }
+
         if (this.connection == null || this.connection.isClosed()) {
             this.connection = DriverManager.getConnection("jdbc:sqlite:" + this.path);
         }
@@ -90,12 +96,7 @@ public class Database
 
     protected void createMigrationsTable() throws SQLException
     {
-        String sql = """
-            CREATE TABLE IF NOT EXISTS migrations (
-                name STRING PRIMARY KEY,
-                timestamp INTEGER
-            );
-        """;
+        String sql = "CREATE TABLE IF NOT EXISTS migrations ( name STRING PRIMARY KEY, timestamp INTEGER);";
 
         try (Statement statement = this.getConnection().createStatement()) {
             statement.execute(sql);

@@ -33,9 +33,7 @@ public class DeleteLodsWithoutVersion extends Migration
     public void up() throws Exception
     {
         try (Statement statement = this.database.getConnection().createStatement()) {
-            statement.execute("""
-                DELETE FROM lods WHERE version IS NULL;
-            """);
+            statement.execute("DELETE FROM lods WHERE version IS NULL;");
         }
     }
 }

@@ -37,7 +37,9 @@ public class Configuration
 
     public void set(String key, @Nullable Object value)
     {
-        if (value instanceof String stringValue) {
+        if (value instanceof String) {
+            String stringValue = (String) value;
+
             if ("false".equalsIgnoreCase(stringValue)) {
                 value = false;
             } else if ("true".equalsIgnoreCase(stringValue)) {

@@ -35,9 +35,7 @@ import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class WorldHandler implements Listener
 {
@@ -138,23 +136,31 @@ public class WorldHandler implements Listener
         try {
             Object result = method.invoke(event);
 
-            if (result instanceof Location location) {
-                list = List.of(location.getBlock());
-            } else if (result instanceof Chunk chunk) {
-                list = List.of(chunk.getBlock(0, 0, 0));
+            if (result instanceof Location) {
+                Location location = (Location) result;
+
+                list = Collections.singletonList(location.getBlock());
+            } else if (result instanceof Chunk) {
+                Chunk chunk = (Chunk) result;
+
+                list = Collections.singletonList(chunk.getBlock(0, 0, 0));
             } else if (result instanceof List) {
                 list = (List<?>) result;
             } else {
-                list = List.of(result);
+                list = Collections.singletonList(result);
             }
         } catch (IllegalAccessException | InvocationTargetException exception) {
             throw new RuntimeException(exception);
         }
 
         for (Object entry : list) {
-            if (entry instanceof Block block) {
+            if (entry instanceof Block) {
+                Block block = (Block) entry;
+
                 this.touchLod(block.getLocation(), eventClassName);
-            } else if (entry instanceof BlockState state) {
+            } else if (entry instanceof BlockState) {
+                BlockState state = (BlockState) entry;
+
                 this.touchLod(state.getLocation(), eventClassName);
             } else {
                 this.plugin.getDhSupport().warning("Unknown block " + entry + " from event: " + eventClassName);

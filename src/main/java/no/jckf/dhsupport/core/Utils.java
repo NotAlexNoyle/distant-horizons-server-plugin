@@ -66,49 +66,44 @@ public class Utils
 
     public static String humanReadableDuration(final Duration duration)
     {
-        if (duration.toDays() >= 365) {
+        long totalSeconds = duration.getSeconds();
+
+        if (totalSeconds >= 365L * 24 * 60 * 60) {
             return "infinite";
         }
 
-        final StringBuilder builder = new StringBuilder();
+        long days = totalSeconds / 86_400;
+        totalSeconds %= 86_400;
 
-        if (duration.toDays() > 0) {
-            builder.append(duration.toDaysPart()).append(" day");
+        long hours = totalSeconds / 3_600;
+        totalSeconds %= 3_600;
 
-            if (duration.toDaysPart() != 1) {
-                builder.append("s");
-            }
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
 
+        StringBuilder builder = new StringBuilder();
+
+        if (days > 0) {
+            builder.append(days).append(" day");
+            if (days != 1) builder.append("s");
             builder.append(", ");
         }
 
-        if (duration.toHours() > 0) {
-            builder.append(duration.toHoursPart()).append(" hour");
-
-            if (duration.toHoursPart() != 1) {
-                builder.append("s");
-            }
-
+        if (hours > 0) {
+            builder.append(hours).append(" hour");
+            if (hours != 1) builder.append("s");
             builder.append(", ");
         }
 
-        if (duration.toMinutes() > 0) {
-            builder.append(duration.toMinutesPart()).append(" minute");
-
-            if (duration.toMinutesPart() != 1) {
-                builder.append("s");
-            }
-
+        if (minutes > 0) {
+            builder.append(minutes).append(" minute");
+            if (minutes != 1) builder.append("s");
             builder.append(", ");
         }
 
-        if (duration.toSeconds() > 0 || builder.isEmpty()) {
-            builder.append(duration.toSecondsPart()).append(" second");
-
-            if (duration.toSecondsPart() != 1) {
-                builder.append("s");
-            }
-
+        if (seconds > 0 || builder.length() == 0) {
+            builder.append(seconds).append(" second");
+            if (seconds != 1) builder.append("s");
             builder.append(", ");
         }
 

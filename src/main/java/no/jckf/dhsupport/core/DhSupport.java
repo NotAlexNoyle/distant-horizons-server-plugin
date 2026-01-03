@@ -329,7 +329,7 @@ public class DhSupport implements Configurable
         LodBuilder builder;
 
         try {
-            Class<? extends LodBuilder> builderClass = Class.forName(LodBuilder.class.getPackageName() + "." + builderType).asSubclass(LodBuilder.class);
+            Class<? extends LodBuilder> builderClass = Class.forName(LodBuilder.class.getPackage().getName() + "." + builderType).asSubclass(LodBuilder.class);
 
             Constructor<?> constructor = builderClass.getConstructor(WorldInterface.class, SectionPosition.class);
 
@@ -353,7 +353,7 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(() -> {
+        CompletableFuture<Lod> queued = this.getScheduler().runOnMainThread(() -> {
                 this.joinPauseState();
 
                 return builder.generate();
@@ -727,7 +727,7 @@ public class DhSupport implements Configurable
                     chains.add(chain);
                 }
 
-                return CompletableFuture.allOf(chains.toArray(CompletableFuture[]::new))
+                return CompletableFuture.allOf(chains.stream().toArray(CompletableFuture[]::new))
                     .thenApply((bar) -> {
                         double elapsed = (System.currentTimeMillis() - ts) / 1000d;
 

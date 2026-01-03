@@ -78,7 +78,7 @@ public class BukkitWorldInterface implements WorldInterface
         this.config = config;
         this.worldConfig = new WorldConfiguration(this, config);
 
-        this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
+        this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.getMinY() : 0);
     }
 
     public void setLogger(Logger logger)
@@ -289,8 +289,10 @@ public class BukkitWorldInterface implements WorldInterface
 
         int borderRadius = (int) (this.world.getWorldBorder().getSize() / 2.0);
 
+
+
         if (this.worldConfig.getString(DhsConfig.VANILLA_WORLD_BORDER_EXPANSION, "auto").equals("auto")) {
-            borderRadius += Coordinates.chunkToBlock(this.world.getViewDistance());
+            borderRadius += Coordinates.chunkToBlock(this.plugin.getServer().getViewDistance());
         } else {
             borderRadius += Coordinates.chunkToBlock(this.worldConfig.getInt(DhsConfig.VANILLA_WORLD_BORDER_EXPANSION, 0));
         }
@@ -459,7 +461,7 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public int getMinY()
     {
-        return this.world.getMinHeight();
+        return 0;
     }
 
     @Override
@@ -509,18 +511,7 @@ public class BukkitWorldInterface implements WorldInterface
             return "minecraft:plains";
         }
 
-        NamespacedKey key = this.getChunk(x, z).getBiome(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey();
-
-        // If the server just reports "custom" and we have access to getBiomeKey, try to get the correct biome name.
-        if (key.toString().equals("minecraft:custom") && this.getBiomeKey != null) {
-            try {
-                key = (NamespacedKey) this.getBiomeKey.invoke(this.unsafeValues, this.world, x, y, z);
-            } catch (IllegalAccessException | InvocationTargetException exception) {
-                throw new RuntimeException(exception);
-            }
-        }
-
-        return key.toString();
+        return "minecraft:" + this.getChunk(x, z).getBiome(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z)).toString().toLowerCase();
     }
 
     @Override
@@ -536,7 +527,7 @@ public class BukkitWorldInterface implements WorldInterface
             return this.getDummyMaterialAt(y);
         }
 
-        String material = this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+        String material = "minecraft:" + Material.getMaterial(this.getChunk(x, z).getBlockTypeId(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z))).toString().toLowerCase();
 
         return Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + "." + Utils.unNamespaceKey(material), material));
     }
@@ -544,11 +535,7 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public String getBlockStateAsStringAt(int x, int y, int z)
     {
-        if (this.isDummyMode()) {
-            return "";
-        }
-
-        return this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
+        return "";
     }
 
     @Override
@@ -582,7 +569,9 @@ public class BukkitWorldInterface implements WorldInterface
             return 0;
         }
 
-        return (byte) this.getChunk(x, z).getBlockEmittedLight(Coordinates.blockToChunkRelative(x), Math.clamp(y + this.lightOffset, this.getMinY(), this.getMaxY() - 1), Coordinates.blockToChunkRelative(z));
+        int offsetY = y + this.lightOffset;
+
+        return (byte) this.getChunk(x, z).getBlockEmittedLight(Coordinates.blockToChunkRelative(x), Math.max(this.getMinY(), Math.min(offsetY, this.getMaxY() - 1)), Coordinates.blockToChunkRelative(z));
     }
 
     @Override
@@ -592,7 +581,9 @@ public class BukkitWorldInterface implements WorldInterface
             return (byte) (this.getDummyMaterialAt(y + 1).equals("minecraft:air") ? 15 : 0);
         }
 
-        return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), Math.clamp(y + this.lightOffset, this.getMinY(), this.getMaxY() - 1), Coordinates.blockToChunkRelative(z));
+        int offsetY = y + this.lightOffset;
+
+        return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), Math.max(this.getMinY(), Math.min(offsetY, this.getMaxY() - 1)), Coordinates.blockToChunkRelative(z));
     }
 
     @Override
@@ -612,11 +603,7 @@ public class BukkitWorldInterface implements WorldInterface
             return false;
         }
 
-        return this.plugin.getDhSupport().getScheduler()
-            .runOnRegionThread(this.world.getUID(), x, z, () ->
-                ((Beacon) this.world.getBlockAt(x, y, z).getState()).getTier() > 0
-            )
-            .join();
+        return true;
     }
 
     @Override

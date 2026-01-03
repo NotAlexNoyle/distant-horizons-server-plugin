@@ -74,7 +74,7 @@ public class IdMapping extends DataObject
             }
         }
 
-        String serialized = this.biome + IdMapping.separator1 + this.block + (propStringBuilder.isEmpty() ? "" : IdMapping.separator2 + propStringBuilder);
+        String serialized = this.biome + IdMapping.separator1 + this.block + (propStringBuilder.length() > 0 ? "" : IdMapping.separator2 + propStringBuilder);
 
         encoder.writeShortString(serialized);
     }

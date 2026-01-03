@@ -33,17 +33,7 @@ public class CreateLodsTable extends Migration
     public void up() throws Exception
     {
         try (Statement statement = this.database.getConnection().createStatement()) {
-            statement.execute("""
-                CREATE TABLE IF NOT EXISTS lods (
-                    worldId STRING NOT NULL,
-                    x INTEGER NOT NULL,
-                    z INTEGER NOT NULL,
-                    data BLOB NOT NULL,
-                    beacons BLOB NOT NULL,
-                    timestamp INTEGER NOT NULL,
-                    PRIMARY KEY (worldId, x, z)
-                );
-            """);
+            statement.execute("CREATE TABLE IF NOT EXISTS lods ( worldId STRING NOT NULL, x INTEGER NOT NULL, z INTEGER NOT NULL, data BLOB NOT NULL, beacons BLOB NOT NULL, timestamp INTEGER NOT NULL, PRIMARY KEY (worldId, x, z));");
         }
     }
 }

@@ -33,9 +33,7 @@ public class AddLodVersionColumn extends Migration
     public void up() throws Exception
     {
         try (Statement statement = this.database.getConnection().createStatement()) {
-            statement.execute("""
-                ALTER TABLE lods ADD version INT NULL;
-            """);
+            statement.execute("ALTER TABLE lods ADD version INT NULL;");
         }
     }
 }
