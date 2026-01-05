@@ -81,11 +81,11 @@ public class PlayerConfigHandler
                 Object keepValue = null;
 
                 if (key.equals(DhsConfig.DISTANT_GENERATION_ENABLED)) {
-                    if (!(boolean) clientValue) {
-                        player.sendMessage(ChatColor.GOLD + "This server supports Distant Horizons, but you have disabled Distant Generation in your DH settings.");
-                    }
-
-                    if (!dhUseIsAllowed) {
+                    if (dhUseIsAllowed) {
+                        if (!(boolean) clientValue) {
+                            player.sendMessage(ChatColor.GOLD + "This server supports Distant Horizons, but you have disabled Distant Generation in your DH settings.");
+                        }
+                    } else {
                         this.dhSupport.info("Player " + player.getName() + " has been denied the use of Distant Horizons through permissions.");
 
                         keepValue = false;
