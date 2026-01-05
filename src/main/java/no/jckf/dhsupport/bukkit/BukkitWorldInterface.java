@@ -501,7 +501,8 @@ public class BukkitWorldInterface implements WorldInterface
             return Collections.max(this.getDummyColumn().keySet());
         }
 
-        return this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z));
+        // Clamp between min and max Y. Corrupted chunks might return bogus data here.
+        return Math.max(this.getMinY(), Math.min(this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z)), this.getMaxY()));
     }
 
     @Override

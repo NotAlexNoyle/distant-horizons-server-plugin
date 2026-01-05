@@ -353,7 +353,7 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        CompletableFuture<Lod> queued = this.getScheduler().runOnMainThread(() -> {
+        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(() -> {
                 this.joinPauseState();
 
                 return builder.generate();
