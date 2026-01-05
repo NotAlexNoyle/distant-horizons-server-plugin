@@ -102,6 +102,8 @@ public class LodRepository
             statement.setInt(3, sectionZ);
 
             try (ResultSet result = statement.executeQuery()) {
+                result.next();
+
                 byte[] data = result.getBytes("data");
 
                 if (data == null) {
@@ -135,6 +137,8 @@ public class LodRepository
             statement.setInt(3, sectionZ);
 
             try (ResultSet result = statement.executeQuery()) {
+                result.next();
+
                 return result.getInt(1) == 1;
             }
         } catch (SQLException exception) {
