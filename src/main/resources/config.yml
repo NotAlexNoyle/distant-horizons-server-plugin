@@ -3,7 +3,7 @@
 # Default: "{datadir}/data.sqlite"
 database_path: "{datadir}/data.sqlite"
 
-# Maximum supported render distance. Clients will be capped to this value.
+# Maximum supported render distance, given as a radius in number of chunks. Clients will be capped to this value.
 # Required.
 # Default: 1024
 render_distance: 1024
@@ -24,7 +24,7 @@ full_data_request_concurrency_limit: 20
 # Default: true
 real_time_updates_enabled: true
 
-# How close to an update players have to be in order to receive it.
+# How close to an update players have to be in order to receive it. Given as a radius in number of chunks.
 # Required.
 # Default: 128
 real_time_update_radius: 128
@@ -34,7 +34,7 @@ real_time_update_radius: 128
 # Default: true
 login_data_sync_enabled: true
 
-# How far away can a player request updates for during login sync?
+# How far away can a player request updates for during login sync? Given as a radius in number of chunks.
 # Required.
 # Default: 128
 login_data_sync_radius: 128
@@ -162,7 +162,7 @@ worlds:
     # Default: true
     #fast_underfill: false
 
-    # Limit LOD generation to within this area.
+    # Limit LOD generation to within this area. Alle three values are in blocks.
     # Optional.
     #border_center_x: 0
     #border_center_z: 0
