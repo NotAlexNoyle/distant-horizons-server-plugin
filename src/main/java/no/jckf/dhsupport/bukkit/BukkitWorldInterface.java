@@ -56,6 +56,8 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected Map<Integer, String> dummyColumn;
 
+    protected boolean trustHeightMap = true;
+
     protected Map<String, ChunkSnapshot> chunks = new HashMap<>();
 
     protected UnsafeValues unsafeValues;
@@ -79,6 +81,7 @@ public class BukkitWorldInterface implements WorldInterface
         this.worldConfig = new WorldConfiguration(this, config);
 
         this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
+        this.trustHeightMap = this.getConfig().getBool(DhsConfig.TRUST_HEIGHT_MAP, this.trustHeightMap);
     }
 
     public void setLogger(Logger logger)
@@ -495,6 +498,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public int getHighestYAt(int x, int z)
     {
+        if (!this.trustHeightMap) {
+            return this.getMaxY() - 1;
+        }
+
         if (this.isDummyMode()) {
             return Collections.max(this.getDummyColumn().keySet());
         }

@@ -79,6 +79,13 @@ lod_refresh_interval: 15
 # Default: FullBuilder
 builder_type: FullBuilder
 
+# Trust world height map.
+# Disable if you're using a world that was generated with an external tool and your LODs come out broken.
+# WARNING: This will make LOD building MUCH slower!
+# Optional.
+# Default: true
+#trust_height_map: false
+
 # Number of blocks to advance between each sample on the Y axis when generating LODs.
 # A setting of 1 will sample every block, while 2 will sample every other block, and so on.
 # CURRENTLY BROKEN. THIS VALUE IS IGNORED.

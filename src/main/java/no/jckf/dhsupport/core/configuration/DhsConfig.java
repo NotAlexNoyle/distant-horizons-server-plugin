@@ -70,6 +70,8 @@ public abstract class DhsConfig
 
     public static String BUILDER_TYPE = "builder_type";
 
+    public static String TRUST_HEIGHT_MAP = "trust_height_map";
+
     public static String BUILDER_RESOLUTION = "builder_resolution";
 
     public static String SCAN_TO_SEA_LEVEL= "scan_to_sea_level";
