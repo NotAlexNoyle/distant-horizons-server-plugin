@@ -3,7 +3,7 @@
 # Default: "{datadir}/data.sqlite"
 database_path: "{datadir}/data.sqlite"
 
-# Maximum supported render distance. Clients will be capped to this value.
+# Maximum supported render distance, given as a radius in number of chunks. Clients will be capped to this value.
 # Required.
 # Default: 1024
 render_distance: 1024
@@ -24,7 +24,7 @@ full_data_request_concurrency_limit: 20
 # Default: true
 real_time_updates_enabled: true
 
-# How close to an update players have to be in order to receive it.
+# How close to an update players have to be in order to receive it. Given as a radius in number of chunks.
 # Required.
 # Default: 128
 real_time_update_radius: 128
@@ -34,7 +34,7 @@ real_time_update_radius: 128
 # Default: true
 login_data_sync_enabled: true
 
-# How far away can a player request updates for during login sync?
+# How far away can a player request updates for during login sync? Given as a radius in number of chunks.
 # Required.
 # Default: 128
 login_data_sync_radius: 128
@@ -70,7 +70,7 @@ max_data_transfer_speed: 0
 
 # How frequently (in seconds) should LODs be updated if world changes are detected?
 # Required.
-# Default: 5
+# Default: 15
 lod_refresh_interval: 15
 
 # Select which LOD builder to use.
@@ -78,6 +78,13 @@ lod_refresh_interval: 15
 # Required.
 # Default: FullBuilder
 builder_type: FullBuilder
+
+# Trust world height map.
+# Disable if you're using a world that was generated with an external tool and your LODs come out broken.
+# WARNING: This will make LOD building MUCH slower!
+# Optional.
+# Default: true
+#trust_height_map: false
 
 # Number of blocks to advance between each sample on the Y axis when generating LODs.
 # A setting of 1 will sample every block, while 2 will sample every other block, and so on.
@@ -92,7 +99,7 @@ builder_resolution: 2
 # Default: true
 #include_non-colliding_top_layer: false
 
-# If your server is accessible via multiple different addresses, consider setting a level key to let clients know
+# If your server is accessible via multiple different addresses, consider setting a server key to let clients know
 # that even though the address is different; it's the same server.
 # This value must be GLOBALLY UNIQUE! No other server on planet Earth should have the same server key as you.
 # Optional.
@@ -129,6 +136,14 @@ material_map:
   iron_ore: stone
   diamond_ore: stone
 
+# Vertical distance to offset light data.
+# This is a hack to work around SPIGOT-7498. If you're somehow on a 1.20.1 server _with_ this patch, set the value to 0.
+# Optional.
+# Default:
+#  - On 1.20.1: Minimum build height (-64 for vanilla worlds)
+#  - Any other version: 0
+#light_offset_hack: 0
+
 # World specific settings.
 # You can override any of the above settings on a per-world basis.
 worlds:
@@ -154,7 +169,7 @@ worlds:
     # Default: true
     #fast_underfill: false
 
-    # Limit LOD generation to within this area.
+    # Limit LOD generation to within this area. Alle three values are in blocks.
     # Optional.
     #border_center_x: 0
     #border_center_z: 0
@@ -190,6 +205,7 @@ update_events:
 #  - org.bukkit.event.block.SpongeAbsorbEvent
 #  - org.bukkit.event.inventory.FurnaceBurnEvent
   - org.bukkit.event.world.StructureGrowEvent
+  - org.bukkit.event.world.ChunkPopulateEvent
 
 # Number of worker threads used to generate LODs.
 # Required.

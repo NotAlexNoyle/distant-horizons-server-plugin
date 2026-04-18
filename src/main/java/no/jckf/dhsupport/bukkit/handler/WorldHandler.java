@@ -21,6 +21,7 @@ package no.jckf.dhsupport.bukkit.handler;
 import no.jckf.dhsupport.bukkit.BukkitWorldInterface;
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -40,7 +41,7 @@ import java.util.Map;
 
 public class WorldHandler implements Listener
 {
-    protected static final String[] EVENT_METHOD_NAMES = { "blockList", "getBlocks", "getBlock" };
+    protected static final String[] EVENT_METHOD_NAMES = { "blockList", "getBlocks", "getBlock", "getLocation", "getChunk" };
 
     protected DhSupportBukkitPlugin plugin;
 
@@ -137,7 +138,11 @@ public class WorldHandler implements Listener
         try {
             Object result = method.invoke(event);
 
-            if (result instanceof List) {
+            if (result instanceof Location location) {
+                list = List.of(location.getBlock());
+            } else if (result instanceof Chunk chunk) {
+                list = List.of(chunk.getBlock(0, 0, 0));
+            } else if (result instanceof List) {
                 list = (List<?>) result;
             } else {
                 list = List.of(result);

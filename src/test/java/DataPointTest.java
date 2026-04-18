@@ -54,7 +54,7 @@ public class DataPointTest extends TestCase
         this.testHeight();
     }
 
-    public void testPositiveStartY()
+    public void testStartY()
     {
         int randomNumber = (int) Math.floor(Math.random() * 100);
 
@@ -63,9 +63,9 @@ public class DataPointTest extends TestCase
         assertEquals(randomNumber, this.dataPoint.getStartY());
     }
 
-    public void testNegativeStartY()
+    public void testHighStartY()
     {
-        int randomNumber = (int) Math.floor(0 - Math.random() * 100);
+        int randomNumber = 4000; // Chosen by fair dice roll. Guaranteed to be random.
 
         this.dataPoint.setStartY(randomNumber);
 
@@ -74,7 +74,7 @@ public class DataPointTest extends TestCase
 
     public void testStartYAgain()
     {
-        this.testPositiveStartY();
+        this.testStartY();
     }
 
     public void testSkyLight()

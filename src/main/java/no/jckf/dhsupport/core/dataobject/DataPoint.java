@@ -76,16 +76,9 @@ public class DataPoint extends DataObject
         this.data |= ((long) startY & START_Y_MASK) << START_Y_OFFSET;
     }
 
-
     public int getStartY()
     {
-        int raw = (int) ((this.data >> START_Y_OFFSET) & START_Y_MASK);
-
-        if ((raw & 0x0800) != 0) {
-            raw |= (int) ~START_Y_MASK;
-        }
-
-        return raw;
+        return (int) ((this.data >> START_Y_OFFSET) & START_Y_MASK);
     }
 
     public void setSkyLight(byte skyLight)

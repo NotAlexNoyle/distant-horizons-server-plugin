@@ -25,6 +25,7 @@ import no.jckf.dhsupport.core.message.plugin.LevelInitMessage;
 import no.jckf.dhsupport.core.message.plugin.RemotePlayerConfigMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 public class PlayerConfigHandler
@@ -79,10 +80,16 @@ public class PlayerConfigHandler
                 Object clientValue = clientConfig.get(key);
                 Object keepValue = null;
 
-                if (key.equals(DhsConfig.DISTANT_GENERATION_ENABLED) && !dhUseIsAllowed) {
-                    this.dhSupport.info("Player " + player.getName() + " has been denied the use of Distant Horizons through permissions.");
+                if (key.equals(DhsConfig.DISTANT_GENERATION_ENABLED)) {
+                    if (dhUseIsAllowed) {
+                        if (!(boolean) clientValue) {
+                            player.sendMessage(ChatColor.GOLD + "This server supports Distant Horizons, but you have disabled Distant Generation in your DH settings.");
+                        }
+                    } else {
+                        this.dhSupport.info("Player " + player.getName() + " has been denied the use of Distant Horizons through permissions.");
 
-                    keepValue = false;
+                        keepValue = false;
+                    }
                 }
 
                 // TODO: This is ugly. Move to comparator closures like in DH.

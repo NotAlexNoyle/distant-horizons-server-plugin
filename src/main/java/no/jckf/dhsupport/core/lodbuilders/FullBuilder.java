@@ -164,10 +164,8 @@ public class FullBuilder extends LodBuilder
                         point.setHeight(thisStep);
                         point.setMappingId(id);
 
-                        if (highWorldY + 1 < maxY) {
-                            point.setSkyLight(this.worldInterface.getSkyLightAt(worldX, highWorldY + 1, worldZ));
-                            point.setBlockLight(this.worldInterface.getBlockLightAt(worldX, highWorldY + 1, worldZ));
-                        }
+                        point.setSkyLight(this.worldInterface.getSkyLightAt(worldX, highWorldY + 1, worldZ));
+                        point.setBlockLight(this.worldInterface.getBlockLightAt(worldX, highWorldY + 1, worldZ));
 
                         if (material.equals("minecraft:air") || material.equals("minecraft:void_air")) {
                             // Start by filling the top of the column with air, then jump down to the top layer.

@@ -56,6 +56,8 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected Map<Integer, String> dummyColumn;
 
+    protected boolean trustHeightMap = true;
+
     protected Map<String, ChunkSnapshot> chunks = new HashMap<>();
 
     protected UnsafeValues unsafeValues;
@@ -69,12 +71,17 @@ public class BukkitWorldInterface implements WorldInterface
     @Nullable
     protected Method getChunkAtAsync;
 
+    protected int lightOffset = 0;
+
     public BukkitWorldInterface(DhSupportBukkitPlugin plugin, World world, Configuration config)
     {
         this.plugin = plugin;
         this.world = world;
         this.config = config;
         this.worldConfig = new WorldConfiguration(this, config);
+
+        this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
+        this.trustHeightMap = this.getConfig().getBool(DhsConfig.TRUST_HEIGHT_MAP, this.trustHeightMap);
     }
 
     public void setLogger(Logger logger)
@@ -491,6 +498,10 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public int getHighestYAt(int x, int z)
     {
+        if (!this.trustHeightMap) {
+            return this.getMaxY() - 1;
+        }
+
         if (this.isDummyMode()) {
             return Collections.max(this.getDummyColumn().keySet());
         }
@@ -578,7 +589,7 @@ public class BukkitWorldInterface implements WorldInterface
             return 0;
         }
 
-        return (byte) this.getChunk(x, z).getBlockEmittedLight(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z));
+        return (byte) this.getChunk(x, z).getBlockEmittedLight(Coordinates.blockToChunkRelative(x), Math.clamp(y + this.lightOffset, this.getMinY(), this.getMaxY() - 1), Coordinates.blockToChunkRelative(z));
     }
 
     @Override
@@ -588,7 +599,7 @@ public class BukkitWorldInterface implements WorldInterface
             return (byte) (this.getDummyMaterialAt(y + 1).equals("minecraft:air") ? 15 : 0);
         }
 
-        return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z));
+        return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), Math.clamp(y + this.lightOffset, this.getMinY(), this.getMaxY() - 1), Coordinates.blockToChunkRelative(z));
     }
 
     @Override
@@ -626,7 +637,7 @@ public class BukkitWorldInterface implements WorldInterface
 
         int maxY = this.getMaxY();
 
-        while (y < maxY) {
+        while (y + 1 < maxY) {
             y++;
 
             String material = Utils.unNamespaceKey(this.getMaterialAt(x, y, z)).toUpperCase();

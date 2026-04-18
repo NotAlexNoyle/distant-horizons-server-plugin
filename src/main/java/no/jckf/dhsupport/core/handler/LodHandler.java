@@ -91,6 +91,15 @@ public class LodHandler
                 return;
             }
 
+            if (this.dhSupport.isPaused() && !this.dhSupport.getLodRepository().lodExists(worldUuid, position.getX(), position.getZ())) {
+                ExceptionMessage exceptionMessage = new ExceptionMessage();
+                exceptionMessage.isResponseTo(requestMessage);
+                exceptionMessage.setTypeId(ExceptionMessage.TYPE_REQUEST_REJECTED);
+                exceptionMessage.setMessage("Server has paused Distant Horizons");
+                this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), exceptionMessage);
+                return;
+            }
+
             int worldX = Coordinates.sectionToBlock(position.getX());
             int worldZ = Coordinates.sectionToBlock(position.getZ());
 

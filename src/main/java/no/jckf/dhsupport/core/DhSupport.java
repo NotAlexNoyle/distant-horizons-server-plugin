@@ -56,6 +56,8 @@ public class DhSupport implements Configurable
 {
     protected String pluginVersion;
 
+    protected String gameVersion;
+
     protected String dataDirectory;
 
     protected Database database;
@@ -89,9 +91,10 @@ public class DhSupport implements Configurable
 
     protected Map<UUID, PreGenerator> preGenerators = new HashMap<>();
 
-    public DhSupport(String pluginVersion)
+    public DhSupport(String pluginVersion, String gameVersion)
     {
         this.pluginVersion = pluginVersion;
+        this.gameVersion = gameVersion;
 
         this.configuration = new Configuration();
 
@@ -244,6 +247,16 @@ public class DhSupport implements Configurable
         return this.lodRepository;
     }
 
+    public String getPluginVersion()
+    {
+        return this.pluginVersion;
+    }
+
+    public String getGameVersion()
+    {
+        return this.gameVersion;
+    }
+
     public Configuration getConfig()
     {
         return this.configuration;
@@ -340,7 +353,11 @@ public class DhSupport implements Configurable
             return this.queuedBuilders.get(key);
         }
 
-        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(builder::generate)
+        CompletableFuture<Lod> queued = this.getScheduler().runOnSeparateThread(() -> {
+                this.joinPauseState();
+
+                return builder.generate();
+            })
             .thenApply((lod) -> {
                 this.queuedBuilders.remove(key);
 
@@ -376,8 +393,6 @@ public class DhSupport implements Configurable
 
     protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position, boolean manageChunks)
     {
-        this.joinPauseState();
-
         int worldX = Coordinates.sectionToBlock(position.getX());
         int worldZ = Coordinates.sectionToBlock(position.getZ());
 
