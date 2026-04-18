@@ -36,7 +36,7 @@ public class PluginMessageHandler
 
     private MessageTypeRegistry messageTypeRegistry;
 
-    public final String pluginChannel = "distant_horizons:message";
+    public final String pluginChannel = "distant_horizons:msg";
 
     public final short protocolVersion = 13;
 
