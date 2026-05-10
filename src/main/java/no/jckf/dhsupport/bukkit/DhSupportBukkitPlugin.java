@@ -67,7 +67,7 @@ public class DhSupportBukkitPlugin extends JavaPlugin
 
         this.getLogger().info("I am DHS " + pluginVersion + ".");
 
-        this.dhSupport = new DhSupport(pluginVersion, this.getServer().getMinecraftVersion());
+        this.dhSupport = new DhSupport(pluginVersion, this.getServer().getVersion());
         this.dhSupport.setLogger(this.getLogger());
         this.dhSupport.setDataDirectory(this.getDataFolder().getAbsolutePath());
 
