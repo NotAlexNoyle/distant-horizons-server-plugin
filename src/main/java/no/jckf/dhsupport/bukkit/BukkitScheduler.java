@@ -71,7 +71,7 @@ public class BukkitScheduler implements Scheduler
     @Override
     public boolean canReadWorldAsync()
     {
-        return !this.foliaLib.isFolia();
+        return false;
     }
 
     @Override
