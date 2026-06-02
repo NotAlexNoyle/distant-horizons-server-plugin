@@ -22,6 +22,7 @@ import no.jckf.dhsupport.core.DhSupport;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.message.plugin.LevelInitMessage;
+import no.jckf.dhsupport.core.message.plugin.LevelInitRequestMessage;
 import no.jckf.dhsupport.core.message.plugin.RemotePlayerConfigMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
@@ -44,14 +45,11 @@ public class PlayerConfigHandler
 
     public void register()
     {
-        this.pluginMessageHandler.getEventBus().registerHandler(RemotePlayerConfigMessage.class, (configMessage) -> {
+        this.pluginMessageHandler.getEventBus().registerHandler(LevelInitRequestMessage.class, (initRequestMessage) -> {
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
-            Player player = Bukkit.getPlayer(configMessage.getSender());
+            Player player = Bukkit.getPlayer(initRequestMessage.getSender());
 
-            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
-
-            String permission = USAGE_PERMISSION.formatted(world.getName());
-            boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
+            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID()); // TODO: Should be the requested world.
 
             Configuration dhsConfig = world.getConfig();
 
@@ -62,13 +60,24 @@ public class PlayerConfigHandler
                 levelKey = levelKeyPrefix + levelKey;
             }
 
-            //this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
-
             LevelInitMessage levelInitResponse = new LevelInitMessage();
+            //levelInitResponse.isResponseTo(initRequestMessage);
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
             levelInitResponse.setLevelKey(levelKey);
             levelInitResponse.setTime(System.currentTimeMillis());
-            this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), levelInitResponse);
+            this.pluginMessageHandler.sendPluginMessage(initRequestMessage.getSender(), levelInitResponse);
+        });
+
+        this.pluginMessageHandler.getEventBus().registerHandler(RemotePlayerConfigMessage.class, (configMessage) -> {
+            // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
+            Player player = Bukkit.getPlayer(configMessage.getSender());
+
+            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
+
+            String permission = USAGE_PERMISSION.formatted(world.getName());
+            boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
+
+            Configuration dhsConfig = world.getConfig();
 
             Configuration clientConfig = configMessage.toConfiguration();
 

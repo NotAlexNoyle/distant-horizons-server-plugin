@@ -21,7 +21,7 @@ package no.jckf.dhsupport.core.message.plugin;
 import no.jckf.dhsupport.core.bytestream.Decoder;
 import no.jckf.dhsupport.core.bytestream.Encoder;
 
-public class LevelInitMessage extends PluginMessage
+public class LevelInitMessage extends PluginMessage // TODO: Should probably eventually be a TrackablePluginMessage
 {
     protected String serverKey;
 
