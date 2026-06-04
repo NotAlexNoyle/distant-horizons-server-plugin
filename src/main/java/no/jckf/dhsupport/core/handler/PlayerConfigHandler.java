@@ -27,7 +27,10 @@ import no.jckf.dhsupport.core.message.plugin.RemotePlayerConfigMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 public class PlayerConfigHandler
 {
@@ -49,7 +52,12 @@ public class PlayerConfigHandler
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
             Player player = Bukkit.getPlayer(initRequestMessage.getSender());
 
-            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID()); // TODO: Should be the requested world.
+            NamespacedKey worldKey = NamespacedKey.fromString(initRequestMessage.getWorldKey());
+
+            // TODO: This too 👎
+            UUID worldUuid = Bukkit.getServer().getWorld(worldKey).getUID();
+
+            WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
 
             Configuration dhsConfig = world.getConfig();
 

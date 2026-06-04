@@ -4,12 +4,16 @@ import no.jckf.dhsupport.core.bytestream.Decoder;
 
 public class LevelInitRequestMessage extends PluginMessage
 {
-    protected String foo;
+    protected String worldKey;
+
+    public String getWorldKey()
+    {
+        return worldKey;
+    }
 
     @Override
     public void decode(Decoder decoder)
     {
-        this.foo = decoder.readShortString();
-        System.out.println(this.foo);
+        this.worldKey = decoder.readShortString();
     }
 }
