@@ -23,11 +23,23 @@ import no.jckf.dhsupport.core.bytestream.Encoder;
 
 public class LevelInitMessage extends PluginMessage // TODO: Should probably eventually be a TrackablePluginMessage
 {
+    protected String namespacedKey;
+
     protected String serverKey;
 
     protected String levelKey;
 
     protected long time;
+
+    public void setNamespacedKey(String namespacedKey)
+    {
+        this.namespacedKey = namespacedKey;
+    }
+
+    public String getNamespacedKey()
+    {
+        return namespacedKey;
+    }
 
     public void setServerKey(String serverKey)
     {
@@ -62,6 +74,7 @@ public class LevelInitMessage extends PluginMessage // TODO: Should probably eve
     @Override
     public void encode(Encoder encoder)
     {
+        encoder.writeShortString(this.namespacedKey);
         encoder.writeShortString(this.serverKey);
         encoder.writeShortString(this.levelKey);
         encoder.writeLong(this.time);
@@ -70,6 +83,7 @@ public class LevelInitMessage extends PluginMessage // TODO: Should probably eve
     @Override
     public void decode(Decoder decoder)
     {
+        this.namespacedKey = decoder.readShortString();
         this.serverKey = decoder.readShortString();
         this.levelKey = decoder.readShortString();
         this.time = decoder.readLong();

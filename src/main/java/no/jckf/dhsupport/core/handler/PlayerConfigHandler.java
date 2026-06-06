@@ -69,7 +69,7 @@ public class PlayerConfigHandler
             }
 
             LevelInitMessage levelInitResponse = new LevelInitMessage();
-            //levelInitResponse.isResponseTo(initRequestMessage);
+            levelInitResponse.setNamespacedKey(worldKey.asString());
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
             levelInitResponse.setLevelKey(levelKey);
             levelInitResponse.setTime(System.currentTimeMillis());
