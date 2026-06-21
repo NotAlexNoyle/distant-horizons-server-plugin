@@ -30,6 +30,7 @@ import no.jckf.dhsupport.core.configuration.DhsConfig;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.MultiLineChart;
 import org.bstats.charts.SingleLineChart;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -65,9 +66,11 @@ public class DhSupportBukkitPlugin extends JavaPlugin
 
         }
 
-        this.getLogger().info("I am DHS " + pluginVersion + ".");
+        String gameVersion = this.getGameVersion();
 
-        this.dhSupport = new DhSupport(pluginVersion, this.getServer().getVersion());
+        this.getLogger().info("I am DHS " + pluginVersion + " running on " + this.getServer().getName() + " for Minecraft " + gameVersion + ".");
+
+        this.dhSupport = new DhSupport(pluginVersion, gameVersion);
         this.dhSupport.setLogger(this.getLogger());
         this.dhSupport.setDataDirectory(this.getDataFolder().getAbsolutePath());
 
@@ -159,6 +162,21 @@ public class DhSupportBukkitPlugin extends JavaPlugin
         }
 
         return null;
+    }
+
+    protected String getGameVersion()
+    {
+        try {
+            Class<? extends Server> serverClass = this.getServer().getClass();
+
+            serverClass.getMethod("getMinecraftVersion");
+
+            return this.getServer().getMinecraftVersion();
+        } catch (NoSuchMethodException exception) {
+            // If we're here, that probably means we're not running Paper or any Paper fork.
+        }
+
+        return this.getServer().getBukkitVersion().split("-", 2)[0];
     }
 
     @Nullable
