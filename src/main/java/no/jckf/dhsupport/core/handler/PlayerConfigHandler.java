@@ -28,6 +28,7 @@ import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -55,7 +56,19 @@ public class PlayerConfigHandler
             NamespacedKey worldKey = NamespacedKey.fromString(initRequestMessage.getWorldKey());
 
             // TODO: This too 👎
-            UUID worldUuid = Bukkit.getServer().getWorld(worldKey).getUID();
+            UUID worldUuid = null;
+
+            for (World world : Bukkit.getServer().getWorlds()) {
+                if (world.getKey().equals(worldKey)) {
+                    worldUuid = world.getUID();
+                    break;
+                }
+            }
+
+            if (worldUuid == null) {
+                this.dhSupport.warning("Player " + player.getName() + " requested init for unknown world " + worldKey + ".");
+                return;
+            }
 
             WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
 
@@ -69,7 +82,7 @@ public class PlayerConfigHandler
             }
 
             LevelInitMessage levelInitResponse = new LevelInitMessage();
-            levelInitResponse.setNamespacedKey(worldKey.asString());
+            levelInitResponse.setNamespacedKey(worldKey.toString());
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
             levelInitResponse.setLevelKey(levelKey);
             levelInitResponse.setTime(System.currentTimeMillis());
