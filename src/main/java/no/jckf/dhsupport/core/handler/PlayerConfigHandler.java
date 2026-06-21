@@ -109,6 +109,10 @@ public class PlayerConfigHandler
                     }
                 }
 
+                if (key.equals(DhsConfig.REAL_TIME_UPDATES_ENABLED) && !dhUseIsAllowed) {
+                    keepValue = false;
+                }
+
                 // TODO: This is ugly. Move to comparator closures like in DH.
                 if (key.equals(DhsConfig.BORDER_CENTER_X)) {
                     keepValue = world.getWorldBorderX();

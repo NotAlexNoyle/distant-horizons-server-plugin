@@ -592,7 +592,7 @@ public class DhSupport implements Configurable
                                         continue;
                                     }
 
-                                    if (!playerConfig.getBool(DhsConfig.DISTANT_GENERATION_ENABLED) || !playerConfig.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED)) {
+                                    if (!playerConfig.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED)) {
                                         continue;
                                     }
 
