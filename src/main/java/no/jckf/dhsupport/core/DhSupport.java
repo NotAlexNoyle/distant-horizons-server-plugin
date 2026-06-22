@@ -411,9 +411,9 @@ public class DhSupport implements Configurable
 
                     if (!world.isChunkLoaded(chunkX, chunkZ)) {
                         if (generateNewChunks) {
-                            loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
+                            loads.put(chunkX + "x" + chunkZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
                         } else {
-                            loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
+                            loads.put(chunkX + "x" + chunkZ, world.loadChunkAsync(chunkX, chunkZ));
                         }
                     }
                 }
