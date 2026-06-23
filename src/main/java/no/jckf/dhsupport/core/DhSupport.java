@@ -451,9 +451,9 @@ public class DhSupport implements Configurable
                     });
 
                     // If no dummy chunk is configured, reject the build request.
-                    if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
-                        return CompletableFuture.completedFuture(null);
-                    }
+                    //if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
+                    //    return CompletableFuture.completedFuture(null);
+                    //}
 
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);

@@ -503,7 +503,7 @@ public class BukkitWorldInterface implements WorldInterface
         }
 
         if (this.isDummyMode()) {
-            return Collections.max(this.getDummyColumn().keySet());
+            return this.getDummyColumn().isEmpty() ? this.getMinY() : Collections.max(this.getDummyColumn().keySet());
         }
 
         return this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z));
