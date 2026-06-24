@@ -60,6 +60,8 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected Map<String, ChunkSnapshot> chunks = new HashMap<>();
 
+    protected Map<String, Map<String, String>> propertyCache = new HashMap<>();
+
     protected UnsafeValues unsafeValues;
 
     @Nullable
@@ -539,45 +541,104 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public String getMaterialAt(int x, int y, int z)
     {
+        return this.getMappedMaterialAt(x, y, z)[1];
+    }
+
+    /**
+     * Get both the original and mapped materials at a given set of coordinates.
+     * Index 0 is the original material.
+     * Index 1 is the mapped material.
+     */
+    public String[] getMappedMaterialAt(int x, int y, int z)
+    {
         if (this.isDummyMode()) {
-            return this.getDummyMaterialAt(y);
+            String material = Utils.namespaceKey(this.getDummyMaterialAt(y));
+
+            return new String[] {
+                material,
+                material,
+            };
         }
 
-        String material = this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+        String material = Utils.namespaceKey(this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString());
 
-        return Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + "." + Utils.unNamespaceKey(material), material));
+        String mapped = Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + '.' + Utils.unNamespaceKey(material), material));
+
+        return new String[] {
+            material,
+            mapped,
+        };
     }
 
     @Override
     public String getBlockStateAsStringAt(int x, int y, int z)
     {
-        if (this.isDummyMode()) {
-            return "";
+        String[] material = this.getMappedMaterialAt(x, y, z);
+
+        if (this.isDummyMode() || !material[0].equals(material[1])) {
+            return material[1];
         }
 
-        return this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
+        Map<String, String> properties = this.getBlockPropertiesAt(x, y, z);
+
+        if (properties.isEmpty()) {
+            return material[1];
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(material[1])
+            .append('[');
+
+        for (Map.Entry<String, String> property : properties.entrySet()) {
+            builder.append(property.getKey())
+                .append('=')
+                .append(property.getValue())
+                .append(',');
+        }
+
+        builder.setLength(builder.length() - 1);
+        builder.append(']');
+
+        return builder.toString();
     }
 
     @Override
     public Map<String, String> getBlockPropertiesAt(int x, int y, int z)
     {
-        Map<String, String> properties = new HashMap<>();
+        if (this.isDummyMode()) {
+            return Collections.emptyMap();
+        }
 
-        String dataString = this.getBlockStateAsStringAt(x, y, z);
+        String dataString = this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
 
-        int kvStart = dataString.indexOf("[");
+        Map<String, String> cached = this.propertyCache.get(dataString);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        int kvStart = dataString.indexOf('[');
 
         if (kvStart == -1) {
-            return properties;
+            return Collections.emptyMap();
         }
 
         String[] kvStrings = dataString.substring(kvStart + 1, dataString.length() - 1).split(",");
+
+        Arrays.sort(kvStrings);
+
+        Map<String, String> properties = new LinkedHashMap<>(kvStrings.length);
 
         for (String kvString : kvStrings) {
             String[] kv = kvString.split("=", 2);
 
             properties.put(kv[0], kv[1]);
         }
+
+        properties = Collections.unmodifiableMap(properties);
+
+        this.propertyCache.put(dataString, properties);
 
         return properties;
     }
