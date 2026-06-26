@@ -42,6 +42,10 @@ public class Lod extends DataObject
 
     public static int width = 64;
 
+    protected static volatile byte[] compressedGenerationStep;
+
+    protected static volatile byte[] compressedWorldCompressionType;
+
     protected WorldInterface worldInterface;
 
     protected SectionPosition position;
@@ -89,10 +93,15 @@ public class Lod extends DataObject
 
     protected void encodeColumnGenerationStep(Encoder encoder)
     {
-        byte[] bytesToCompress = new byte[Lod.width * Lod.width];
-        Arrays.fill(bytesToCompress, (byte) GenerationStep.LIGHT.value);
+        byte[] compressed = Lod.compressedGenerationStep;
 
-        byte[] compressed = this.compress(bytesToCompress);
+        if (compressed == null) {
+            byte[] bytesToCompress = new byte[Lod.width * Lod.width];
+            Arrays.fill(bytesToCompress, (byte) GenerationStep.LIGHT.value);
+
+            compressed = this.compress(bytesToCompress);
+            Lod.compressedGenerationStep = compressed;
+        }
 
         encoder.writeInt(compressed.length);
         encoder.write(compressed);
@@ -100,9 +109,14 @@ public class Lod extends DataObject
 
     protected void encodeWorldCompressionType(Encoder encoder)
     {
-        byte[] bytesToCompress = new byte[Lod.width * Lod.width]; // All zeroes means WorldCompressionType.STRICT
+        byte[] compressed = Lod.compressedWorldCompressionType;
 
-        byte[] compressed = this.compress(bytesToCompress);
+        if (compressed == null) {
+            byte[] bytesToCompress = new byte[Lod.width * Lod.width]; // All zeroes means WorldCompressionType.STRICT
+
+            compressed = this.compress(bytesToCompress);
+            Lod.compressedWorldCompressionType = compressed;
+        }
 
         encoder.writeInt(compressed.length);
         encoder.write(compressed);
@@ -155,7 +169,11 @@ public class Lod extends DataObject
         ByteArrayOutputStream compressedStream = new ByteArrayOutputStream();
 
         try {
-            OutputStream compressorStream = new XZOutputStream(compressedStream, new LZMA2Options(3), XZ.CHECK_CRC64);
+            LZMA2Options options = new LZMA2Options(3);
+
+            options.setDictSize(Math.max(LZMA2Options.DICT_SIZE_MIN, Math.min(uncompressedData.length, 1 << 20)));
+
+            OutputStream compressorStream = new XZOutputStream(compressedStream, options, XZ.CHECK_CRC64);
 
             compressorStream.write(uncompressedData);
             compressorStream.flush();
