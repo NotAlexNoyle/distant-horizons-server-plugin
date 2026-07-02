@@ -44,20 +44,6 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected static EnumMap<Material, MaterialRecord> MATERIAL_CACHE = new EnumMap<>(Material.class);
 
-    private static boolean isBeaconBaseBlock(String material)
-    {
-        switch (material) {
-            case "minecraft:iron_block":
-            case "minecraft:gold_block":
-            case "minecraft:diamond_block":
-            case "minecraft:emerald_block":
-            case "minecraft:netherite_block":
-                return true;
-            default:
-                return false;
-        }
-    }
-
     protected DhSupportBukkitPlugin plugin;
 
     protected World world;
@@ -202,6 +188,11 @@ public class BukkitWorldInterface implements WorldInterface
         this.chunks[index] = chunk;
 
         return chunk;
+    }
+
+    public boolean isInsideSection(int x, int z)
+    {
+        return Coordinates.blockToSection(x) == this.sectionX && Coordinates.blockToSection(z) == this.sectionZ;
     }
 
     @Override
@@ -719,13 +710,27 @@ public class BukkitWorldInterface implements WorldInterface
 
         for (int checkX = x - 1; checkX <= x + 1; checkX++) {
             for (int checkZ = z - 1; checkZ <= z + 1; checkZ++) {
-                if (!isBeaconBaseBlock(this.getMaterialAt(checkX, baseY, checkZ))) {
+                if (this.isInsideSection(checkX, checkZ) && !this.isBeaconBaseBlock(this.getMaterialAt(checkX, baseY, checkZ))) {
                     return false;
                 }
             }
         }
 
         return true;
+    }
+
+    private boolean isBeaconBaseBlock(String material)
+    {
+        switch (material) {
+            case "minecraft:iron_block":
+            case "minecraft:gold_block":
+            case "minecraft:diamond_block":
+            case "minecraft:emerald_block":
+            case "minecraft:netherite_block":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public boolean hasClearBeaconBeamPath(int x, int y, int z)
