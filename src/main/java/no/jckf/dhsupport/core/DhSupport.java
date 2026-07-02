@@ -688,7 +688,7 @@ public class DhSupport implements Configurable
     {
         WorldInterface world = this.getWorldInterface(worldId);
 
-        List<SectionPosition> positions = new ArrayList<>();
+        List<SectionPosition> positions = new ArrayList<>(concurrency);
 
         for (int i = 0; i < concurrency; i++) {
             SectionPosition position = new SectionPosition();
@@ -704,7 +704,7 @@ public class DhSupport implements Configurable
                     .toArray(CompletableFuture[]::new)
             )
             .thenCompose((foo) -> {
-                List<CompletableFuture<?>> chains = new ArrayList<>();
+                List<CompletableFuture<?>> chains = new ArrayList<>(positions.size());
 
                 long ts = System.currentTimeMillis();
 

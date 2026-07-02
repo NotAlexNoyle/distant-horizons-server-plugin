@@ -52,12 +52,12 @@ public class FullBuilder extends LodBuilder
         boolean performUnderglowHack = this.worldInterface.getConfig().getBool(DhsConfig.PERFORM_UNDERGLOW_HACK, false);
         boolean sampleBiomes3d = this.worldInterface.getConfig().getBool(DhsConfig.SAMPLE_BIOMES_3D, false);
 
-        List<IdMapping> idMappings = new ArrayList<>();
+        List<IdMapping> idMappings = new ArrayList<>(64);
         Map<String, Map<String, Map<String, Integer>>> mapMap = new HashMap<>();
 
-        List<List<DataPoint>> columns = new ArrayList<>(64 * 64);
+        List<List<DataPoint>> columns = new ArrayList<>(Lod.width * Lod.width);
 
-        List<Beacon> beacons = new ArrayList<>();
+        List<Beacon> beacons = new ArrayList<>(8);
 
         for (int relativeX = 0; relativeX < Lod.width; relativeX++) {
             for (int relativeZ = 0; relativeZ < Lod.width; relativeZ++) {
@@ -96,7 +96,7 @@ public class FullBuilder extends LodBuilder
                     biome = this.worldInterface.getBiomeAt(worldX, worldZ);
                 }
 
-                List<DataPoint> column = new ArrayList<>();
+                List<DataPoint> column = new ArrayList<>(32);
 
                 @Nullable
                 DataPoint previous = null;

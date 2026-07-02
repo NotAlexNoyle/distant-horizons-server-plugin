@@ -22,6 +22,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,7 +112,7 @@ public class Configuration
 
     public List<String> getStringList(String key)
     {
-        return this.getStringList(key, new ArrayList<>());
+        return this.getStringList(key, Collections.emptyList());
     }
 
     public int increment(String key)
