@@ -469,10 +469,10 @@ public class DhSupport implements Configurable
 
                 // Combine the LOD and beacons and save the result in the database.
                 return lodFuture.thenApply((lod) -> {
-                    Encoder lodEncoder = new Encoder();
+                    Encoder lodEncoder = new Encoder(8192);
                     lod.encode(lodEncoder);
 
-                    Encoder beaconEncoder = new Encoder();
+                    Encoder beaconEncoder = new Encoder(16 + lod.getBeacons().size() * 16);
                     beaconEncoder.writeCollection(lod.getBeacons());
 
                     this.generationTracker.ping();

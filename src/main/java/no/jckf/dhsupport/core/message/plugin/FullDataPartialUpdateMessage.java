@@ -61,7 +61,7 @@ public class FullDataPartialUpdateMessage extends PluginMessage
     @Override
     public int bufferSize()
     {
-        return 128;
+        return 32 + this.beacons.length;
     }
 
     @Override

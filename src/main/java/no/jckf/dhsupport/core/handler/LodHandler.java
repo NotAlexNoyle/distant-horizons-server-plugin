@@ -30,7 +30,6 @@ import no.jckf.dhsupport.core.message.plugin.FullDataSourceResponseMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 public class LodHandler

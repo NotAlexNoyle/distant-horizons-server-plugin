@@ -67,7 +67,7 @@ public class Lod extends DataObject
 
     protected void encodeData(Encoder encoder)
     {
-        Encoder toCompress = new Encoder();
+        Encoder toCompress = new Encoder(8192);
 
         for (List<DataPoint> column : this.columns) {
             toCompress.writeShort(column.size());
@@ -124,7 +124,7 @@ public class Lod extends DataObject
 
     protected void encodeMappings(Encoder encoder)
     {
-        Encoder toCompress = new Encoder();
+        Encoder toCompress = new Encoder(1024);
 
         toCompress.writeInt(this.idMappings.size());
 
