@@ -18,6 +18,8 @@
 
 package no.jckf.dhsupport.core;
 
+import java.util.function.BiConsumer;
+
 // Block -> chunk -> section -> region
 public class Coordinates
 {
@@ -100,5 +102,40 @@ public class Coordinates
     public static int blockToChunkRelative(int value)
     {
         return value & 0x0F;
+    }
+
+    // PACK/UNPACK
+
+    public static long pack(int x, int z)
+    {
+        return ((long) x & 0xffffffffL)
+            | (((long) z & 0xffffffffL) << 32);
+    }
+
+    public static int unpackX(long packed)
+    {
+        return (int) packed;
+    }
+
+    public static int unpackZ(long packed)
+    {
+        return (int) (packed >> 32);
+    }
+
+    // ???
+
+    public static void foreachChunkInSection(int sectionX, int sectionZ, BiConsumer<Integer, Integer> consumer)
+    {
+        int worldX = sectionToBlock(sectionX);
+        int worldZ = sectionToBlock(sectionZ);
+
+        for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
+            for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
+                consumer.accept(
+                    worldX + 16 * xMultiplier,
+                    worldZ + 16 * zMultiplier
+                );
+            }
+        }
     }
 }

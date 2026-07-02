@@ -21,10 +21,15 @@ package no.jckf.dhsupport.core;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Utils
 {
     private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII);
+
+    private static final Map<String, String> NAMESPACE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, String> UNNAMESPACE_CACHE = new ConcurrentHashMap<>();
 
     public static String bytesToHex(byte[] bytes)
     {
@@ -115,9 +120,12 @@ public class Utils
         return builder.substring(0, builder.length() - 2);
     }
 
+    /**
+     * @deprecated For awareness: This method caches results by key only.
+     */
     public static String namespaceKey(String key, String defaultNamespace)
     {
-        return key.contains(":") ? key : defaultNamespace + ":" + key;
+        return NAMESPACE_CACHE.computeIfAbsent(key, (k) -> k.contains(":") ? k : defaultNamespace + ":" + k);
     }
 
     public static String namespaceKey(String key)
@@ -125,9 +133,12 @@ public class Utils
         return namespaceKey(key, "minecraft");
     }
 
+    /**
+     * @deprecated For awareness: This method caches results by key only.
+     */
     public static String unNamespaceKey(String key, String namespace)
     {
-        return key.startsWith(namespace + ":") ? key.substring(namespace.length() + 1) : key;
+        return UNNAMESPACE_CACHE.computeIfAbsent(key, (k) -> k.startsWith(namespace + ":") ? k.substring(namespace.length() + 1) : k);
     }
 
     public static String unNamespaceKey(String key)

@@ -53,9 +53,9 @@ public class FullBuilder extends LodBuilder
         boolean sampleBiomes3d = this.worldInterface.getConfig().getBool(DhsConfig.SAMPLE_BIOMES_3D, false);
 
         List<IdMapping> idMappings = new ArrayList<>();
-        Map<String, Integer> mapMap = new HashMap<>();
+        Map<String, Map<String, Map<String, Integer>>> mapMap = new HashMap<>();
 
-        List<List<DataPoint>> columns = new ArrayList<>();
+        List<List<DataPoint>> columns = new ArrayList<>(64 * 64);
 
         List<Beacon> beacons = new ArrayList<>();
 
@@ -138,15 +138,26 @@ public class FullBuilder extends LodBuilder
                         biome = this.worldInterface.getBiomeAt(worldX, highWorldY, worldZ);
                     }
 
-                    String compositeKey = biome + "|" + material + "|" + this.worldInterface.getBlockStateAsStringAt(worldX, highWorldY, worldZ);
+                    Map<String, Map<String, Integer>> biomeMap = mapMap.get(biome);
+                    if (biomeMap == null) {
+                        biomeMap = new HashMap<>();
+                        mapMap.put(biome, biomeMap);
+                    }
 
-                    @Nullable
-                    Integer id = mapMap.get(compositeKey);
+                    Map<String, Integer> materialMap = biomeMap.get(material);
+                    if (materialMap == null) {
+                        materialMap = new HashMap<>();
+                        biomeMap.put(material, materialMap);
+                    }
+
+                    String blockState = this.worldInterface.getBlockStateAsStringAt(worldX, highWorldY, worldZ);
+
+                    Integer id = materialMap.get(blockState);
 
                     if (id == null) {
                         idMappings.add(new IdMapping(biome, material, this.worldInterface.getBlockPropertiesAt(worldX, highWorldY, worldZ)));
                         id = idMappings.size() - 1;
-                        mapMap.put(compositeKey, id);
+                        materialMap.put(blockState, id);
                     }
 
                     DataPoint point;

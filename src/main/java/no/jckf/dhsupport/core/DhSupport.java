@@ -400,24 +400,19 @@ public class DhSupport implements Configurable
 
         boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true);
 
-        Map<String, CompletableFuture<Boolean>> loads = new HashMap<>();
+        Map<Long, CompletableFuture<Boolean>> loads = new HashMap<>();
 
         if (manageChunks) {
             // Load all the chunks we need for this request.
-            for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
-                for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
-                    int chunkX = worldX + 16 * xMultiplier;
-                    int chunkZ = worldZ + 16 * zMultiplier;
-
-                    if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                        if (generateNewChunks) {
-                            loads.put(chunkX + "x" + chunkZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
-                        } else {
-                            loads.put(chunkX + "x" + chunkZ, world.loadChunkAsync(chunkX, chunkZ));
-                        }
+            Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
+                if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                    if (generateNewChunks) {
+                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadOrGenerateChunkAsync(chunkX, chunkZ));
+                    } else {
+                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadChunkAsync(chunkX, chunkZ));
                     }
                 }
-            }
+            });
         }
 
         // Wait for chunk loads, then...
@@ -438,46 +433,42 @@ public class DhSupport implements Configurable
                 if (loadRejected) {
                     // Discard the chunks we loaded.
                     this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                        for (String key : loads.keySet()) {
-                            String[] xz = key.split("x", 2);
-
+                        for (long packed : loads.keySet()) {
                             world.discardChunk(
-                                Integer.parseInt(xz[0]),
-                                Integer.parseInt(xz[1])
+                                Coordinates.unpackX(packed),
+                                Coordinates.unpackZ(packed)
                             );
                         }
 
                         return null;
                     });
 
-                    // If no dummy chunk is configured, reject the build request.
-                    //if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
-                    //    return CompletableFuture.completedFuture(null);
-                    //}
-
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);
                 }
+
+                // Prime chunk data in world interface.
+                Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
+                    world.getMaterialAt(chunkX, world.getSeaLevel(), chunkZ);
+                });
+
+                // Discard the chunks we loaded.
+                this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
+                    for (long packed : loads.keySet()) {
+                        world.discardChunk(
+                            Coordinates.unpackX(packed),
+                            Coordinates.unpackZ(packed)
+                        );
+                    }
+
+                    return null;
+                });
 
                 // No LOD was found. Start building a new one.
                 CompletableFuture<Lod> lodFuture = this.queueBuilder(worldId, position, this.getBuilder(world, position));
 
                 // Combine the LOD and beacons and save the result in the database.
                 return lodFuture.thenApply((lod) -> {
-                    // Discard the chunks we loaded.
-                    this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                        for (String key : loads.keySet()) {
-                            String[] xz = key.split("x", 2);
-
-                            world.discardChunk(
-                                Integer.parseInt(xz[0]),
-                                Integer.parseInt(xz[1])
-                            );
-                        }
-
-                        return null;
-                    });
-
                     Encoder lodEncoder = new Encoder();
                     lod.encode(lodEncoder);
 

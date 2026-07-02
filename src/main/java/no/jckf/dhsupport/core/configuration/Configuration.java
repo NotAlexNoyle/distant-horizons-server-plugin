@@ -35,6 +35,11 @@ public class Configuration
         this.variables.clear();
     }
 
+    public boolean has(String key)
+    {
+        return this.variables.containsKey(key);
+    }
+
     public void set(String key, @Nullable Object value)
     {
         if (value instanceof String stringValue) {
