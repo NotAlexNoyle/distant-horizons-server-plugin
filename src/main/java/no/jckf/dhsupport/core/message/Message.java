@@ -25,6 +25,11 @@ import no.jckf.dhsupport.core.bytestream.Encoder;
 
 public abstract class Message implements Encodable, Decodable
 {
+    public int bufferSize()
+    {
+        return 64;
+    }
+
     public void encode(Encoder encoder)
     {
         throw new UnsupportedOperationException();

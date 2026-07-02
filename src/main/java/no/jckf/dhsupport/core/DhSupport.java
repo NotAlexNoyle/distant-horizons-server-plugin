@@ -618,11 +618,11 @@ public class DhSupport implements Configurable
                                         FullDataChunkMessage chunkResponse = new FullDataChunkMessage();
                                         chunkResponse.setBufferId(myBufferId);
                                         chunkResponse.setIsFirst(chunkNo == 0);
-                                        chunkResponse.setData(Arrays.copyOfRange(
+                                        chunkResponse.setData(
                                             data,
                                             LodHandler.CHUNK_SIZE * chunkNo,
-                                            Math.min(LodHandler.CHUNK_SIZE * chunkNo + LodHandler.CHUNK_SIZE, data.length)
-                                        ));
+                                            Math.min(LodHandler.CHUNK_SIZE, data.length - LodHandler.CHUNK_SIZE * chunkNo)
+                                        );
 
                                         this.pluginMessageHandler.sendPluginMessage(player.getUniqueId(), chunkResponse);
                                     }

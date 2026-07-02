@@ -154,19 +154,7 @@ public class PluginMessageHandler
             return;
         }
 
-        byte[] data;
-
-        try {
-            Encoder encoder = new Encoder();
-            message.encode(encoder);
-            data = encoder.toByteArray();
-        } catch (Exception exception) {
-            this.dhSupport.warning("Failed to encode " + message.getClass().getSimpleName());
-            exception.printStackTrace();
-            return;
-        }
-
-        Encoder encoder = new Encoder();
+        Encoder encoder = new Encoder(message.bufferSize());
 
         encoder.writeShort(this.protocolVersion);
         encoder.writeShort(messageTypeId);
@@ -175,7 +163,13 @@ public class PluginMessageHandler
             encoder.writeInt(((TrackablePluginMessage) message).getTracker());
         }
 
-        encoder.write(data);
+        try {
+            message.encode(encoder);
+        } catch (Exception exception) {
+            this.dhSupport.warning("Failed to encode " + message.getClass().getSimpleName());
+            exception.printStackTrace();
+            return;
+        }
 
         byte[] fullMessage = encoder.toByteArray();
 

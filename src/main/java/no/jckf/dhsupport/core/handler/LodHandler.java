@@ -174,11 +174,11 @@ public class LodHandler
                             FullDataChunkMessage chunkResponse = new FullDataChunkMessage();
                             chunkResponse.setBufferId(myBufferId);
                             chunkResponse.setIsFirst(chunkNo == 0);
-                            chunkResponse.setData(Arrays.copyOfRange(
+                            chunkResponse.setData(
                                 data,
                                 CHUNK_SIZE * chunkNo,
-                                Math.min(CHUNK_SIZE * chunkNo + CHUNK_SIZE, data.length)
-                            ));
+                                Math.min(CHUNK_SIZE, data.length - CHUNK_SIZE * chunkNo)
+                            );
 
                             this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), chunkResponse);
                         }
