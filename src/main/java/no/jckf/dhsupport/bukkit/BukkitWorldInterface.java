@@ -42,8 +42,6 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected static boolean ASYNC_LOAD_WARNING_SENT = false;
 
-    protected static EnumMap<Material, MaterialRecord> MATERIAL_CACHE = new EnumMap<>(Material.class);
-
     protected DhSupportBukkitPlugin plugin;
 
     protected World world;
@@ -64,6 +62,8 @@ public class BukkitWorldInterface implements WorldInterface
     private Integer sectionZ;
 
     private final ChunkSnapshot[] chunks = new ChunkSnapshot[16];
+
+    protected EnumMap<Material, MaterialRecord> materialCache = new EnumMap<>(Material.class);
 
     protected Map<String, Map<String, String>> propertyCache = new HashMap<>();
 
@@ -573,7 +573,7 @@ public class BukkitWorldInterface implements WorldInterface
 
     public MaterialRecord getMaterialRecordAt(int x, int y, int z)
     {
-        return MATERIAL_CACHE.computeIfAbsent(
+        return this.materialCache.computeIfAbsent(
             this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)),
             (mat) -> {
                 String key = Utils.unNamespaceKey(mat.getKey().toString());
