@@ -431,26 +431,14 @@ public class DhSupport implements Configurable
                     .anyMatch(Predicate.isEqual(false));
 
                 if (loadRejected) {
-                    // Discard the chunks we loaded.
-                    this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                        for (long packed : loads.keySet()) {
-                            world.discardChunk(
-                                Coordinates.unpackX(packed),
-                                Coordinates.unpackZ(packed)
-                            );
-                        }
-
-                        return null;
-                    });
-
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);
+                } else {
+                    // Prime chunk data in world interface.
+                    Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
+                        world.getMaterialAt(chunkX, world.getSeaLevel(), chunkZ);
+                    });
                 }
-
-                // Prime chunk data in world interface.
-                Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
-                    world.getMaterialAt(chunkX, world.getSeaLevel(), chunkZ);
-                });
 
                 // Discard the chunks we loaded.
                 this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
