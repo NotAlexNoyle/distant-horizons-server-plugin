@@ -85,8 +85,16 @@ public interface WorldInterface extends Configurable
 
     String getMaterialAt(int x, int y, int z);
 
+    /**
+     * Get the string representation of the block state at the given coordinates.
+     * Block state properties are ordered in ascending order.
+     */
     String getBlockStateAsStringAt(int x, int y, int z);
 
+    /**
+     * Get block properties as key/value pairs.
+     * Ordered in ascending order.
+     */
     Map<String, String> getBlockPropertiesAt(int x, int y, int z);
 
     byte getBlockLightAt(int x, int y, int z);

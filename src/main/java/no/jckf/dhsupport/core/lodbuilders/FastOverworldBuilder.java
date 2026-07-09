@@ -56,12 +56,12 @@ public class FastOverworldBuilder extends LodBuilder
         boolean includeNonCollidingTopLayer = this.worldInterface.getConfig().getBool(DhsConfig.INCLUDE_NON_COLLIDING_TOP_LAYER, true);
         boolean sampleBiomes3d = this.worldInterface.getConfig().getBool(DhsConfig.SAMPLE_BIOMES_3D, false);
 
-        List<IdMapping> idMappings = new ArrayList<>();
-        Map<String, Integer> mapMap = new HashMap<>();
+        List<IdMapping> idMappings = new ArrayList<>(64);
+        Map<String, Map<String, Integer>> mapMap = new HashMap<>();
 
-        List<List<DataPoint>> columns = new ArrayList<>();
+        List<List<DataPoint>> columns = new ArrayList<>(Lod.width * Lod.width);
 
-        List<Beacon> beacons = new ArrayList<>();
+        List<Beacon> beacons = new ArrayList<>(8);
 
         for (int relativeX = 0; relativeX < Lod.width; relativeX++) {
             for (int relativeZ = 0; relativeZ < Lod.width; relativeZ++) {
@@ -100,7 +100,7 @@ public class FastOverworldBuilder extends LodBuilder
                     biome = this.worldInterface.getBiomeAt(worldX, worldZ);
                 }
 
-                List<DataPoint> column = new ArrayList<>();
+                List<DataPoint> column = new ArrayList<>(8);
 
                 @Nullable
                 DataPoint previous = null;
@@ -158,15 +158,18 @@ public class FastOverworldBuilder extends LodBuilder
                         biome = this.worldInterface.getBiomeAt(worldX, highWorldY, worldZ);
                     }
 
-                    String compositeKey = biome + "|" + material;
+                    Map<String, Integer> biomeMap = mapMap.get(biome);
+                    if (biomeMap == null) {
+                        biomeMap = new HashMap<>();
+                        mapMap.put(biome, biomeMap);
+                    }
 
-                    @Nullable
-                    Integer id = mapMap.get(compositeKey);
+                    Integer id = biomeMap.get(material);
 
                     if (id == null) {
                         idMappings.add(new IdMapping(biome, material, null));
                         id = idMappings.size() - 1;
-                        mapMap.put(compositeKey, id);
+                        biomeMap.put(material, id);
                     }
 
                     DataPoint point;

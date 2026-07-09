@@ -49,6 +49,12 @@ public class FullDataSourceResponseMessage extends TrackablePluginMessage
     }
 
     @Override
+    public int bufferSize()
+    {
+        return this.bufferId == null ? super.bufferSize() : 16 + this.beacons.length;
+    }
+
+    @Override
     public void encode(Encoder encoder)
     {
         if (encoder.writeOptional(this.bufferId)) {

@@ -22,11 +22,16 @@ import no.jckf.dhsupport.core.DhSupport;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.message.plugin.LevelInitMessage;
+import no.jckf.dhsupport.core.message.plugin.LevelInitRequestMessage;
 import no.jckf.dhsupport.core.message.plugin.RemotePlayerConfigMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+
+import java.util.UUID;
 
 public class PlayerConfigHandler
 {
@@ -44,14 +49,28 @@ public class PlayerConfigHandler
 
     public void register()
     {
-        this.pluginMessageHandler.getEventBus().registerHandler(RemotePlayerConfigMessage.class, (configMessage) -> {
+        this.pluginMessageHandler.getEventBus().registerHandler(LevelInitRequestMessage.class, (initRequestMessage) -> {
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
-            Player player = Bukkit.getPlayer(configMessage.getSender());
+            Player player = Bukkit.getPlayer(initRequestMessage.getSender());
 
-            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
+            NamespacedKey worldKey = NamespacedKey.fromString(initRequestMessage.getWorldKey());
 
-            String permission = USAGE_PERMISSION.formatted(world.getName());
-            boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
+            // TODO: This too 👎
+            UUID worldUuid = null;
+
+            for (World world : Bukkit.getServer().getWorlds()) {
+                if (world.getKey().equals(worldKey)) {
+                    worldUuid = world.getUID();
+                    break;
+                }
+            }
+
+            if (worldUuid == null) {
+                this.dhSupport.warning("Player " + player.getName() + " requested init for unknown world " + worldKey + ".");
+                return;
+            }
+
+            WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
 
             Configuration dhsConfig = world.getConfig();
 
@@ -62,13 +81,24 @@ public class PlayerConfigHandler
                 levelKey = levelKeyPrefix + levelKey;
             }
 
-            //this.dhSupport.info("Received DH config for " + player.getName() + " in " + levelKey);
-
             LevelInitMessage levelInitResponse = new LevelInitMessage();
+            levelInitResponse.setNamespacedKey(worldKey.toString());
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
             levelInitResponse.setLevelKey(levelKey);
             levelInitResponse.setTime(System.currentTimeMillis());
-            this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), levelInitResponse);
+            this.pluginMessageHandler.sendPluginMessage(initRequestMessage.getSender(), levelInitResponse);
+        });
+
+        this.pluginMessageHandler.getEventBus().registerHandler(RemotePlayerConfigMessage.class, (configMessage) -> {
+            // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
+            Player player = Bukkit.getPlayer(configMessage.getSender());
+
+            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
+
+            String permission = USAGE_PERMISSION.formatted(world.getName());
+            boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
+
+            Configuration dhsConfig = world.getConfig();
 
             Configuration clientConfig = configMessage.toConfiguration();
 
@@ -90,6 +120,10 @@ public class PlayerConfigHandler
 
                         keepValue = false;
                     }
+                }
+
+                if (key.equals(DhsConfig.REAL_TIME_UPDATES_ENABLED) && !dhUseIsAllowed) {
+                    keepValue = false;
                 }
 
                 // TODO: This is ugly. Move to comparator closures like in DH.

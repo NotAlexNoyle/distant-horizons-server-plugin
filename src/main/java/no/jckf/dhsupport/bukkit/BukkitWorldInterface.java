@@ -24,9 +24,9 @@ import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.configuration.WorldConfiguration;
 import no.jckf.dhsupport.core.scheduling.Scheduler;
+import no.jckf.dhsupport.core.world.MaterialRecord;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.*;
-import org.bukkit.block.Beacon;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -58,7 +58,14 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected boolean trustHeightMap = true;
 
-    protected Map<String, ChunkSnapshot> chunks = new HashMap<>();
+    private Integer sectionX;
+    private Integer sectionZ;
+
+    private final ChunkSnapshot[] chunks = new ChunkSnapshot[16];
+
+    protected EnumMap<Material, MaterialRecord> materialCache = new EnumMap<>(Material.class);
+
+    protected Map<String, Map<String, String>> propertyCache = new HashMap<>();
 
     protected UnsafeValues unsafeValues;
 
@@ -147,13 +154,26 @@ public class BukkitWorldInterface implements WorldInterface
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
-        String key = chunkX + "x" + chunkZ;
+        int sectionX = Coordinates.chunkToSection(chunkX);
+        int sectionZ = Coordinates.chunkToSection(chunkZ);
 
-        if (this.chunks.containsKey(key)) {
-            return this.chunks.get(key);
+        if (this.sectionX == null) {
+            this.sectionX = sectionX;
+            this.sectionZ = sectionZ;
+        } else if (this.sectionX != sectionX || this.sectionZ != sectionZ) {
+            throw new IllegalStateException("We appear to be leaking world interface instances across LOD sections");
         }
 
-        ChunkSnapshot chunk;
+        int baseChunkX = Coordinates.sectionToChunk(sectionX);
+        int baseChunkZ = Coordinates.sectionToChunk(sectionZ);
+
+        int index = (chunkX - baseChunkX) + ((chunkZ - baseChunkZ) << 2);
+
+        ChunkSnapshot chunk = this.chunks[index];
+
+        if (chunk != null) {
+            return chunk;
+        }
 
         Scheduler scheduler = this.plugin.getDhSupport().getScheduler();
 
@@ -165,9 +185,14 @@ public class BukkitWorldInterface implements WorldInterface
             ).join();
         }
 
-        this.chunks.put(key, chunk);
+        this.chunks[index] = chunk;
 
         return chunk;
+    }
+
+    public boolean isInsideSection(int x, int z)
+    {
+        return Coordinates.blockToSection(x) == this.sectionX && Coordinates.blockToSection(z) == this.sectionZ;
     }
 
     @Override
@@ -503,7 +528,7 @@ public class BukkitWorldInterface implements WorldInterface
         }
 
         if (this.isDummyMode()) {
-            return Collections.max(this.getDummyColumn().keySet());
+            return this.getDummyColumn().isEmpty() ? this.getMinY() : Collections.max(this.getDummyColumn().keySet());
         }
 
         return this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z));
@@ -540,44 +565,97 @@ public class BukkitWorldInterface implements WorldInterface
     public String getMaterialAt(int x, int y, int z)
     {
         if (this.isDummyMode()) {
-            return this.getDummyMaterialAt(y);
+            return Utils.namespaceKey(this.getDummyMaterialAt(y));
         }
 
-        String material = this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getKey().toString();
+        return this.getMaterialRecordAt(x, y, z).toString();
+    }
 
-        return Utils.namespaceKey(this.config.getString(DhsConfig.MATERIAL_MAP + "." + Utils.unNamespaceKey(material), material));
+    public MaterialRecord getMaterialRecordAt(int x, int y, int z)
+    {
+        return this.materialCache.computeIfAbsent(
+            this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)),
+            (mat) -> {
+                String key = Utils.unNamespaceKey(mat.getKey().toString());
+                String mapped = this.config.getString(DhsConfig.MATERIAL_MAP + '.' + key, key);
+
+                return new MaterialRecord(
+                    Utils.namespaceKey(mapped == null ? key : mapped),
+                    !key.equals(mapped)
+                );
+            }
+        );
     }
 
     @Override
     public String getBlockStateAsStringAt(int x, int y, int z)
     {
-        if (this.isDummyMode()) {
-            return "";
+        MaterialRecord materialRecord = this.getMaterialRecordAt(x, y, z);
+
+        if (this.isDummyMode() || materialRecord.isMapped()) {
+            return materialRecord.toString();
         }
 
-        return this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
+        Map<String, String> properties = this.getBlockPropertiesAt(x, y, z);
+
+        if (properties.isEmpty()) {
+            return materialRecord.toString();
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(materialRecord.toString())
+            .append('[');
+
+        for (Map.Entry<String, String> property : properties.entrySet()) {
+            builder.append(property.getKey())
+                .append('=')
+                .append(property.getValue())
+                .append(',');
+        }
+
+        builder.setLength(builder.length() - 1);
+        builder.append(']');
+
+        return builder.toString();
     }
 
     @Override
     public Map<String, String> getBlockPropertiesAt(int x, int y, int z)
     {
-        Map<String, String> properties = new HashMap<>();
+        if (this.isDummyMode()) {
+            return Collections.emptyMap();
+        }
 
-        String dataString = this.getBlockStateAsStringAt(x, y, z);
+        String dataString = this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
 
-        int kvStart = dataString.indexOf("[");
+        Map<String, String> cached = this.propertyCache.get(dataString);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        int kvStart = dataString.indexOf('[');
 
         if (kvStart == -1) {
-            return properties;
+            return Collections.emptyMap();
         }
 
         String[] kvStrings = dataString.substring(kvStart + 1, dataString.length() - 1).split(",");
+
+        Arrays.sort(kvStrings);
+
+        Map<String, String> properties = new LinkedHashMap<>(kvStrings.length);
 
         for (String kvString : kvStrings) {
             String[] kv = kvString.split("=", 2);
 
             properties.put(kv[0], kv[1]);
         }
+
+        properties = Collections.unmodifiableMap(properties);
+
+        this.propertyCache.put(dataString, properties);
 
         return properties;
     }
@@ -615,15 +693,63 @@ public class BukkitWorldInterface implements WorldInterface
             return false;
         }
 
-        if (!this.getMaterialAt(x, y, z).equals("minecraft:beacon")) {
+        if (!this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).equals(Material.BEACON)) {
             return false;
         }
 
-        return this.plugin.getDhSupport().getScheduler()
-            .runOnRegionThread(this.world.getUID(), x, z, () ->
-                ((Beacon) this.world.getBlockAt(x, y, z).getState()).getTier() > 0
-            )
-            .join();
+        return this.hasTierOneBeaconBase(x, y, z) && this.hasClearBeaconBeamPath(x, y, z);
+    }
+
+    public boolean hasTierOneBeaconBase(int x, int y, int z)
+    {
+        int baseY = y - 1;
+
+        if (baseY < this.getMinY()) {
+            return false;
+        }
+
+        for (int checkX = x - 1; checkX <= x + 1; checkX++) {
+            for (int checkZ = z - 1; checkZ <= z + 1; checkZ++) {
+                if (this.isInsideSection(checkX, checkZ) && !this.isBeaconBaseBlock(this.getMaterialAt(checkX, baseY, checkZ))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isBeaconBaseBlock(String material)
+    {
+        switch (material) {
+            case "minecraft:iron_block":
+            case "minecraft:gold_block":
+            case "minecraft:diamond_block":
+            case "minecraft:emerald_block":
+            case "minecraft:netherite_block":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public boolean hasClearBeaconBeamPath(int x, int y, int z)
+    {
+        for (int checkY = y + 1; checkY < this.getMaxY(); checkY++) {
+            String material = this.getMaterialAt(x, checkY, z);
+
+            switch (material) {
+                case "minecraft:air":
+                case "minecraft:cave_air":
+                case "minecraft:void_air":
+                case "minecraft:glass":
+                    continue;
+                default:
+                    return material.endsWith("_stained_glass");
+            }
+        }
+
+        return true;
     }
 
     @Override

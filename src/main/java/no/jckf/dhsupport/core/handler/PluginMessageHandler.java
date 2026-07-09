@@ -38,7 +38,7 @@ public class PluginMessageHandler
 
     public final String pluginChannel = "distant_horizons:msg";
 
-    public final short protocolVersion = 13;
+    public final short protocolVersion = 15;
 
     private EventBus<PluginMessage> eventBus;
 
@@ -53,13 +53,14 @@ public class PluginMessageHandler
         this.messageTypeRegistry.registerMessageType(0, null);
         this.messageTypeRegistry.registerMessageType(1, CloseReasonMessage.class);
         this.messageTypeRegistry.registerMessageType(2, LevelInitMessage.class);
-        this.messageTypeRegistry.registerMessageType(3, RemotePlayerConfigMessage.class);
-        this.messageTypeRegistry.registerMessageType(4, CancelMessage.class);
-        this.messageTypeRegistry.registerMessageType(5, ExceptionMessage.class);
-        this.messageTypeRegistry.registerMessageType(6, FullDataSourceRequestMessage.class);
-        this.messageTypeRegistry.registerMessageType(7, FullDataSourceResponseMessage.class);
-        this.messageTypeRegistry.registerMessageType(8, FullDataPartialUpdateMessage.class);
-        this.messageTypeRegistry.registerMessageType(9, FullDataChunkMessage.class);
+        this.messageTypeRegistry.registerMessageType(3, LevelInitRequestMessage.class);
+        this.messageTypeRegistry.registerMessageType(4, RemotePlayerConfigMessage.class);
+        this.messageTypeRegistry.registerMessageType(5, CancelMessage.class);
+        this.messageTypeRegistry.registerMessageType(6, ExceptionMessage.class);
+        this.messageTypeRegistry.registerMessageType(7, FullDataSourceRequestMessage.class);
+        this.messageTypeRegistry.registerMessageType(8, FullDataSourceResponseMessage.class);
+        this.messageTypeRegistry.registerMessageType(9, FullDataPartialUpdateMessage.class);
+        this.messageTypeRegistry.registerMessageType(10, FullDataChunkMessage.class);
     }
 
     public void onEnable()
@@ -153,19 +154,7 @@ public class PluginMessageHandler
             return;
         }
 
-        byte[] data;
-
-        try {
-            Encoder encoder = new Encoder();
-            message.encode(encoder);
-            data = encoder.toByteArray();
-        } catch (Exception exception) {
-            this.dhSupport.warning("Failed to encode " + message.getClass().getSimpleName());
-            exception.printStackTrace();
-            return;
-        }
-
-        Encoder encoder = new Encoder();
+        Encoder encoder = new Encoder(message.bufferSize());
 
         encoder.writeShort(this.protocolVersion);
         encoder.writeShort(messageTypeId);
@@ -174,7 +163,13 @@ public class PluginMessageHandler
             encoder.writeInt(((TrackablePluginMessage) message).getTracker());
         }
 
-        encoder.write(data);
+        try {
+            message.encode(encoder);
+        } catch (Exception exception) {
+            this.dhSupport.warning("Failed to encode " + message.getClass().getSimpleName());
+            exception.printStackTrace();
+            return;
+        }
 
         byte[] fullMessage = encoder.toByteArray();
 

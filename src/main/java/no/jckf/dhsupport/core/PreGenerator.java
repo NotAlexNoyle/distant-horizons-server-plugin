@@ -76,7 +76,7 @@ public class PreGenerator implements Runnable
         int[][] directions = {{ 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 }};
         int dirIndex = 0;
 
-        List<CompletableFuture<LodModel>> requests = new ArrayList<>();
+        List<CompletableFuture<LodModel>> requests = new ArrayList<>(rateLimit);
 
         this.startTime = System.currentTimeMillis();
 

@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 public class PlayerHandler implements Listener
@@ -51,7 +52,7 @@ public class PlayerHandler implements Listener
                 return null;
             }
 
-            for (String message : dhSupport.getConfig().getStringList(DhsConfig.AD_MESSAGE, new ArrayList<>())) {
+            for (String message : dhSupport.getConfig().getStringList(DhsConfig.AD_MESSAGE, Collections.emptyList())) {
                 player.sendMessage(message);
             }
 

@@ -33,9 +33,19 @@ public class Encoder
         this.output = ByteStreams.newDataOutput();
     }
 
+    public Encoder(int size)
+    {
+        this.output = ByteStreams.newDataOutput(size);
+    }
+
     public void write(byte[] data)
     {
         this.output.write(data);
+    }
+
+    public void write(byte[] data, int offset, int length)
+    {
+        this.output.write(data, offset, length);
     }
 
     public void writeByte(byte value)

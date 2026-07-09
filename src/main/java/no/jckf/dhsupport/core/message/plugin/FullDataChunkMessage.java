@@ -26,6 +26,10 @@ public class FullDataChunkMessage extends PluginMessage
 
     protected byte[] data;
 
+    protected int offset;
+
+    protected int length;
+
     protected boolean isFirst = true;
 
     public void setBufferId(int bufferId)
@@ -38,9 +42,11 @@ public class FullDataChunkMessage extends PluginMessage
         return this.bufferId;
     }
 
-    public void setData(byte[] data)
+    public void setData(byte[] data, int offset, int length)
     {
         this.data = data;
+        this.offset = offset;
+        this.length = length;
     }
 
     public byte[] getData()
@@ -59,11 +65,17 @@ public class FullDataChunkMessage extends PluginMessage
     }
 
     @Override
+    public int bufferSize()
+    {
+        return 32 + this.length;
+    }
+
+    @Override
     public void encode(Encoder encoder)
     {
         encoder.writeInt(this.bufferId);
-        encoder.writeInt(this.data.length);
-        encoder.write(this.data);
+        encoder.writeInt(this.length);
+        encoder.write(this.data, this.offset, this.length);
         encoder.writeBoolean(this.isFirst);
     }
 }

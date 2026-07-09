@@ -59,6 +59,12 @@ public class FullDataPartialUpdateMessage extends PluginMessage
     }
 
     @Override
+    public int bufferSize()
+    {
+        return 32 + this.beacons.length;
+    }
+
+    @Override
     public void encode(Encoder encoder)
     {
         encoder.writeShortString(this.levelKey);

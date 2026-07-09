@@ -400,24 +400,19 @@ public class DhSupport implements Configurable
 
         boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true);
 
-        Map<String, CompletableFuture<Boolean>> loads = new HashMap<>();
+        Map<Long, CompletableFuture<Boolean>> loads = new HashMap<>();
 
         if (manageChunks) {
             // Load all the chunks we need for this request.
-            for (int xMultiplier = 0; xMultiplier < 4; xMultiplier++) {
-                for (int zMultiplier = 0; zMultiplier < 4; zMultiplier++) {
-                    int chunkX = worldX + 16 * xMultiplier;
-                    int chunkZ = worldZ + 16 * zMultiplier;
-
-                    if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                        if (generateNewChunks) {
-                            loads.put(worldX + "x" + worldZ, world.loadOrGenerateChunkAsync(chunkX, chunkZ));
-                        } else {
-                            loads.put(worldX + "x" + worldZ, world.loadChunkAsync(chunkX, chunkZ));
-                        }
+            Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
+                if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                    if (generateNewChunks) {
+                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadOrGenerateChunkAsync(chunkX, chunkZ));
+                    } else {
+                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadChunkAsync(chunkX, chunkZ));
                     }
                 }
-            }
+            });
         }
 
         // Wait for chunk loads, then...
@@ -436,52 +431,36 @@ public class DhSupport implements Configurable
                     .anyMatch(Predicate.isEqual(false));
 
                 if (loadRejected) {
-                    // Discard the chunks we loaded.
-                    this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                        for (String key : loads.keySet()) {
-                            String[] xz = key.split("x", 2);
-
-                            world.discardChunk(
-                                Integer.parseInt(xz[0]),
-                                Integer.parseInt(xz[1])
-                            );
-                        }
-
-                        return null;
-                    });
-
-                    // If no dummy chunk is configured, reject the build request.
-                    if (world.getConfig().getStringList(DhsConfig.DUMMY_CHUNK).isEmpty()) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);
+                } else {
+                    // Prime chunk data in world interface.
+                    Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
+                        world.getMaterialAt(chunkX, world.getSeaLevel(), chunkZ);
+                    });
                 }
+
+                // Discard the chunks we loaded.
+                this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
+                    for (long packed : loads.keySet()) {
+                        world.discardChunk(
+                            Coordinates.unpackX(packed),
+                            Coordinates.unpackZ(packed)
+                        );
+                    }
+
+                    return null;
+                });
 
                 // No LOD was found. Start building a new one.
                 CompletableFuture<Lod> lodFuture = this.queueBuilder(worldId, position, this.getBuilder(world, position));
 
                 // Combine the LOD and beacons and save the result in the database.
                 return lodFuture.thenApply((lod) -> {
-                    // Discard the chunks we loaded.
-                    this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                        for (String key : loads.keySet()) {
-                            String[] xz = key.split("x", 2);
-
-                            world.discardChunk(
-                                Integer.parseInt(xz[0]),
-                                Integer.parseInt(xz[1])
-                            );
-                        }
-
-                        return null;
-                    });
-
-                    Encoder lodEncoder = new Encoder();
+                    Encoder lodEncoder = new Encoder(8192);
                     lod.encode(lodEncoder);
 
-                    Encoder beaconEncoder = new Encoder();
+                    Encoder beaconEncoder = new Encoder(16 + lod.getBeacons().size() * 16);
                     beaconEncoder.writeCollection(lod.getBeacons());
 
                     this.generationTracker.ping();
@@ -592,7 +571,7 @@ public class DhSupport implements Configurable
                                         continue;
                                     }
 
-                                    if (!playerConfig.getBool(DhsConfig.DISTANT_GENERATION_ENABLED) || !playerConfig.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED)) {
+                                    if (!playerConfig.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED)) {
                                         continue;
                                     }
 
@@ -627,11 +606,11 @@ public class DhSupport implements Configurable
                                         FullDataChunkMessage chunkResponse = new FullDataChunkMessage();
                                         chunkResponse.setBufferId(myBufferId);
                                         chunkResponse.setIsFirst(chunkNo == 0);
-                                        chunkResponse.setData(Arrays.copyOfRange(
+                                        chunkResponse.setData(
                                             data,
                                             LodHandler.CHUNK_SIZE * chunkNo,
-                                            Math.min(LodHandler.CHUNK_SIZE * chunkNo + LodHandler.CHUNK_SIZE, data.length)
-                                        ));
+                                            Math.min(LodHandler.CHUNK_SIZE, data.length - LodHandler.CHUNK_SIZE * chunkNo)
+                                        );
 
                                         this.pluginMessageHandler.sendPluginMessage(player.getUniqueId(), chunkResponse);
                                     }
@@ -697,7 +676,7 @@ public class DhSupport implements Configurable
     {
         WorldInterface world = this.getWorldInterface(worldId);
 
-        List<SectionPosition> positions = new ArrayList<>();
+        List<SectionPosition> positions = new ArrayList<>(concurrency);
 
         for (int i = 0; i < concurrency; i++) {
             SectionPosition position = new SectionPosition();
@@ -713,7 +692,7 @@ public class DhSupport implements Configurable
                     .toArray(CompletableFuture[]::new)
             )
             .thenCompose((foo) -> {
-                List<CompletableFuture<?>> chains = new ArrayList<>();
+                List<CompletableFuture<?>> chains = new ArrayList<>(positions.size());
 
                 long ts = System.currentTimeMillis();
 

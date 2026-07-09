@@ -52,12 +52,12 @@ public class FullBuilder extends LodBuilder
         boolean performUnderglowHack = this.worldInterface.getConfig().getBool(DhsConfig.PERFORM_UNDERGLOW_HACK, false);
         boolean sampleBiomes3d = this.worldInterface.getConfig().getBool(DhsConfig.SAMPLE_BIOMES_3D, false);
 
-        List<IdMapping> idMappings = new ArrayList<>();
-        Map<String, Integer> mapMap = new HashMap<>();
+        List<IdMapping> idMappings = new ArrayList<>(64);
+        Map<String, Map<String, Map<String, Integer>>> mapMap = new HashMap<>();
 
-        List<List<DataPoint>> columns = new ArrayList<>();
+        List<List<DataPoint>> columns = new ArrayList<>(Lod.width * Lod.width);
 
-        List<Beacon> beacons = new ArrayList<>();
+        List<Beacon> beacons = new ArrayList<>(8);
 
         for (int relativeX = 0; relativeX < Lod.width; relativeX++) {
             for (int relativeZ = 0; relativeZ < Lod.width; relativeZ++) {
@@ -96,7 +96,7 @@ public class FullBuilder extends LodBuilder
                     biome = this.worldInterface.getBiomeAt(worldX, worldZ);
                 }
 
-                List<DataPoint> column = new ArrayList<>();
+                List<DataPoint> column = new ArrayList<>(32);
 
                 @Nullable
                 DataPoint previous = null;
@@ -138,15 +138,26 @@ public class FullBuilder extends LodBuilder
                         biome = this.worldInterface.getBiomeAt(worldX, highWorldY, worldZ);
                     }
 
-                    String compositeKey = biome + "|" + material + "|" + this.worldInterface.getBlockStateAsStringAt(worldX, highWorldY, worldZ);
+                    Map<String, Map<String, Integer>> biomeMap = mapMap.get(biome);
+                    if (biomeMap == null) {
+                        biomeMap = new HashMap<>();
+                        mapMap.put(biome, biomeMap);
+                    }
 
-                    @Nullable
-                    Integer id = mapMap.get(compositeKey);
+                    Map<String, Integer> materialMap = biomeMap.get(material);
+                    if (materialMap == null) {
+                        materialMap = new HashMap<>();
+                        biomeMap.put(material, materialMap);
+                    }
+
+                    String blockState = this.worldInterface.getBlockStateAsStringAt(worldX, highWorldY, worldZ);
+
+                    Integer id = materialMap.get(blockState);
 
                     if (id == null) {
                         idMappings.add(new IdMapping(biome, material, this.worldInterface.getBlockPropertiesAt(worldX, highWorldY, worldZ)));
                         id = idMappings.size() - 1;
-                        mapMap.put(compositeKey, id);
+                        materialMap.put(blockState, id);
                     }
 
                     DataPoint point;

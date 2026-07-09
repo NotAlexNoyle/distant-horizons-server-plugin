@@ -110,7 +110,7 @@ public class Decoder
     {
         int size = this.readInt();
 
-        List<T> items = new ArrayList<>();
+        List<T> items = new ArrayList<>(Math.min(size, 128));
 
         for (int i = 0; i < size; i++) {
             T item = this.readObject(className);
