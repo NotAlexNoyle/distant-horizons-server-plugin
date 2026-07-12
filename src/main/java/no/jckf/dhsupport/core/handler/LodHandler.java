@@ -60,13 +60,15 @@ public class LodHandler
                 return;
             }
 
+            Configuration dhsConfig = this.dhSupport.getConfig();
+
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
-            UUID worldUuid = Bukkit.getPlayer(requestMessage.getSender()).getWorld().getUID();
+            UUID worldUuid = Bukkit.getWorld(requestMessage.getWorldName().substring(dhsConfig.getString(DhsConfig.LEVEL_KEY_PREFIX, "").length())).getUID();
 
             WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
 
             Configuration config = world.getConfig();
-            Configuration playerConfig = this.dhSupport.getPlayerConfiguration(requestMessage.getSender());
+            Configuration playerConfig = this.dhSupport.getPlayerConfiguration(requestMessage.getSender(), worldUuid);
 
             if (!config.getBool(DhsConfig.DISTANT_GENERATION_ENABLED) || !playerConfig.getBool(DhsConfig.DISTANT_GENERATION_ENABLED)) {
                 ExceptionMessage exceptionMessage = new ExceptionMessage();

@@ -31,6 +31,8 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class PlayerConfigHandler
@@ -93,69 +95,73 @@ public class PlayerConfigHandler
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
             Player player = Bukkit.getPlayer(configMessage.getSender());
 
-            WorldInterface world = this.dhSupport.getWorldInterface(player.getWorld().getUID());
+            Map<UUID, Configuration> playerConfigurations = new HashMap<>();
 
-            String permission = USAGE_PERMISSION.formatted(world.getName());
-            boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
+            for (WorldInterface world : this.dhSupport.getWorldInterfaces().values()) {
+                String permission = USAGE_PERMISSION.formatted(world.getName());
+                boolean dhUseIsAllowed = !player.isPermissionSet(permission) || player.hasPermission(permission);
 
-            Configuration dhsConfig = world.getConfig();
+                Configuration dhsConfig = world.getConfig();
 
-            Configuration clientConfig = configMessage.toConfiguration();
+                Configuration clientConfig = configMessage.toConfiguration();
 
-            // This is not very flexible, but will do for now.
-            for (String key : RemotePlayerConfigMessage.KEYS) {
-                //this.dhSupport.getLogger().info("Config key " + key + ":");
+                // This is not very flexible, but will do for now.
+                for (String key : RemotePlayerConfigMessage.KEYS) {
+                    //this.dhSupport.getLogger().info("Config key " + key + ":");
 
-                Object dhsValue = dhsConfig.get(key);
-                Object clientValue = clientConfig.get(key);
-                Object keepValue = null;
+                    Object dhsValue = dhsConfig.get(key);
+                    Object clientValue = clientConfig.get(key);
+                    Object keepValue = null;
 
-                if (key.equals(DhsConfig.DISTANT_GENERATION_ENABLED)) {
-                    if (dhUseIsAllowed) {
-                        if (!(boolean) clientValue) {
-                            player.sendMessage(ChatColor.GOLD + "This server supports Distant Horizons, but you have disabled Distant Generation in your DH settings.");
+                    if (key.equals(DhsConfig.DISTANT_GENERATION_ENABLED)) {
+                        if (dhUseIsAllowed) {
+                            if (!(boolean) clientValue) {
+                                player.sendMessage(ChatColor.GOLD + "This server supports Distant Horizons, but you have disabled Distant Generation in your DH settings.");
+                            }
+                        } else {
+                            this.dhSupport.info("Player " + player.getName() + " has been denied the use of Distant Horizons through permissions.");
+
+                            keepValue = false;
                         }
-                    } else {
-                        this.dhSupport.info("Player " + player.getName() + " has been denied the use of Distant Horizons through permissions.");
+                    }
 
+                    if (key.equals(DhsConfig.REAL_TIME_UPDATES_ENABLED) && !dhUseIsAllowed) {
                         keepValue = false;
                     }
-                }
 
-                if (key.equals(DhsConfig.REAL_TIME_UPDATES_ENABLED) && !dhUseIsAllowed) {
-                    keepValue = false;
-                }
-
-                // TODO: This is ugly. Move to comparator closures like in DH.
-                if (key.equals(DhsConfig.BORDER_CENTER_X)) {
-                    keepValue = world.getWorldBorderX();
-                } else if (key.equals(DhsConfig.BORDER_CENTER_Z)) {
-                    keepValue = world.getWorldBorderZ();
-                } else if(key.equals(DhsConfig.BORDER_RADIUS)) {
-                    keepValue = world.getWorldBorderRadius();
-                }
-
-                if (keepValue == null) {
-                    if (dhsValue instanceof Boolean dhsBool && clientValue instanceof Boolean clientBool) {
-                        keepValue = dhsBool && clientBool;
-
-                        //this.dhSupport.getLogger().info("    Server " + (dhsBool ? "Y" : "N") + " or client " + (clientBool ? "Y" : "N") + " = " + ((boolean) keepValue ? "Y" : "N"));
-                    } else if (dhsValue instanceof Integer dhsInt && clientValue instanceof Integer clientInt) {
-                        keepValue = dhsInt < clientInt ? dhsInt : clientInt;
-
-                        //this.dhSupport.getLogger().info("    Server " + dhsInt + " or client " + clientInt + " = " + keepValue);
-                    } else {
-                        //this.dhSupport.getLogger().info("    Uhh... 😵‍💫");
+                    // TODO: This is ugly. Move to comparator closures like in DH.
+                    if (key.equals(DhsConfig.BORDER_CENTER_X)) {
+                        keepValue = world.getWorldBorderX();
+                    } else if (key.equals(DhsConfig.BORDER_CENTER_Z)) {
+                        keepValue = world.getWorldBorderZ();
+                    } else if(key.equals(DhsConfig.BORDER_RADIUS)) {
+                        keepValue = world.getWorldBorderRadius();
                     }
+
+                    if (keepValue == null) {
+                        if (dhsValue instanceof Boolean dhsBool && clientValue instanceof Boolean clientBool) {
+                            keepValue = dhsBool && clientBool;
+
+                            //this.dhSupport.getLogger().info("    Server " + (dhsBool ? "Y" : "N") + " or client " + (clientBool ? "Y" : "N") + " = " + ((boolean) keepValue ? "Y" : "N"));
+                        } else if (dhsValue instanceof Integer dhsInt && clientValue instanceof Integer clientInt) {
+                            keepValue = dhsInt < clientInt ? dhsInt : clientInt;
+
+                            //this.dhSupport.getLogger().info("    Server " + dhsInt + " or client " + clientInt + " = " + keepValue);
+                        } else {
+                            //this.dhSupport.getLogger().info("    Uhh... 😵‍💫");
+                        }
+                    }
+
+                    clientConfig.set(key, keepValue == null ? -1 : keepValue);
                 }
 
-                clientConfig.set(key, keepValue == null ? -1 : keepValue);
+                playerConfigurations.put(world.getId(), clientConfig);
             }
 
-            this.dhSupport.setPlayerConfiguration(configMessage.getSender(), clientConfig);
+            this.dhSupport.setPlayerConfiguration(configMessage.getSender(), playerConfigurations);
 
             RemotePlayerConfigMessage configResponse = new RemotePlayerConfigMessage();
-            configResponse.fromConfiguration(clientConfig);
+            configResponse.fromConfiguration(playerConfigurations.get(player.getWorld().getUID()));
 
             this.pluginMessageHandler.sendPluginMessage(configMessage.getSender(), configResponse);
         });

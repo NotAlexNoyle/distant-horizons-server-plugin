@@ -48,7 +48,7 @@ public class PlayerHandler implements Listener
         DhSupport dhSupport = this.plugin.getDhSupport();
 
         dhSupport.getScheduler().runOnMainThreadDelayed(() -> {
-            if (dhSupport.getPlayerConfiguration(player.getUniqueId()) != null) {
+            if (dhSupport.getPlayerConfiguration(player.getUniqueId(), player.getWorld().getUID()) != null) {
                 return null;
             }
 

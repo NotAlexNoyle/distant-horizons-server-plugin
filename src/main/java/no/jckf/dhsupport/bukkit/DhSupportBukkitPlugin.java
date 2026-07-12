@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class DhSupportBukkitPlugin extends JavaPlugin
 {
@@ -79,10 +80,12 @@ public class DhSupportBukkitPlugin extends JavaPlugin
         this.metrics.addCustomChart(new MultiLineChart("dh_render_distance", () -> {
             Map<String, Integer> renderDistances = new HashMap<>();
 
-            for (Configuration playerConfig : this.dhSupport.getPlayerConfigurations().values()) {
-                String rd = String.valueOf(playerConfig.getInt(DhsConfig.RENDER_DISTANCE));
+            for (Map<UUID, Configuration> playerConfigurations : this.dhSupport.getPlayerConfigurations().values()) {
+                for (Configuration playerConfig : playerConfigurations.values()) {
+                    String rd = String.valueOf(playerConfig.getInt(DhsConfig.RENDER_DISTANCE));
 
-                renderDistances.put(rd, renderDistances.getOrDefault(rd, 0) + 1);
+                    renderDistances.put(rd, renderDistances.getOrDefault(rd, 0) + 1);
+                }
             }
 
             return renderDistances;

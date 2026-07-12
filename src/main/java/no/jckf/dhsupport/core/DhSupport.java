@@ -87,7 +87,7 @@ public class DhSupport implements Configurable
 
     protected Map<String, LodModel> touchedLods = new ConcurrentHashMap<>();
 
-    protected Map<UUID, Configuration> playerConfigurations = new HashMap<>();
+    protected Map<UUID, Map<UUID, Configuration>> playerConfigurations = new HashMap<>();
 
     protected Map<UUID, PreGenerator> preGenerators = new HashMap<>();
 
@@ -220,6 +220,11 @@ public class DhSupport implements Configurable
         this.worldInterfaces.put(id, worldInterface);
     }
 
+    public Map<UUID, WorldInterface> getWorldInterfaces()
+    {
+        return this.worldInterfaces;
+    }
+
     @Nullable
     public WorldInterface getWorldInterface(UUID id)
     {
@@ -302,19 +307,21 @@ public class DhSupport implements Configurable
         this.warning("A newer version of the plugin is available.");
     }
 
-    public Map<UUID, Configuration> getPlayerConfigurations()
+    public Map<UUID, Map<UUID, Configuration>> getPlayerConfigurations()
     {
         return this.playerConfigurations;
     }
 
-    public void setPlayerConfiguration(UUID playerId, Configuration playerConfiguration)
+    public void setPlayerConfiguration(UUID playerId, Map<UUID, Configuration> playerConfigurations)
     {
-        this.playerConfigurations.put(playerId, playerConfiguration);
+        this.playerConfigurations.put(playerId, playerConfigurations);
     }
 
-    public Configuration getPlayerConfiguration(UUID playerId)
+    public Configuration getPlayerConfiguration(UUID playerId, UUID worldId)
     {
-        return this.playerConfigurations.get(playerId);
+        Map<UUID, Configuration> configurations = this.playerConfigurations.get(playerId);
+
+        return configurations == null ? null : configurations.get(worldId);
     }
 
     public void clearPlayerConfiguration(UUID playerId)
@@ -563,7 +570,7 @@ public class DhSupport implements Configurable
 
                                 // TODO: Don't use Bukkit classes.
                                 for (Player player : Bukkit.getWorld(newLodModel.getWorldId()).getPlayers()) {
-                                    Configuration playerConfig = this.getPlayerConfiguration(player.getUniqueId());
+                                    Configuration playerConfig = this.getPlayerConfiguration(player.getUniqueId(), world.getId());
 
                                     // No config for this player? Probably not using DH.
                                     if (playerConfig == null) {
