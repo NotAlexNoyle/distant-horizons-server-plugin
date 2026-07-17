@@ -43,6 +43,8 @@ public interface WorldInterface extends Configurable
 
     @Nullable Integer getWorldBorderRadius();
 
+    boolean isInsideWorldBorder(int x, int z, int area);
+
     void setDummyMode(boolean enable);
 
     boolean isDummyMode();

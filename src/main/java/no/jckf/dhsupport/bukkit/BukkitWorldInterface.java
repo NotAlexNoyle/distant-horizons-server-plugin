@@ -327,6 +327,31 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
+    public boolean isInsideWorldBorder(int x, int z, int areaWidth)
+    {
+        Integer borderCenterX = this.getWorldBorderX();
+        Integer borderCenterZ = this.getWorldBorderZ();
+        Integer borderRadius = this.getWorldBorderRadius();
+
+        if (borderCenterX == null || borderCenterZ == null || borderRadius == null) {
+            return true;
+        }
+
+        int borderMinX = borderCenterX - borderRadius;
+        int borderMaxX = borderCenterX + borderRadius;
+        int borderMinZ = borderCenterZ - borderRadius;
+        int borderMaxZ = borderCenterZ + borderRadius;
+
+        int sectionMaxX = x + (areaWidth - 1);
+        int sectionMaxZ = z + (areaWidth - 1);
+
+        return x <= borderMaxX
+            && sectionMaxX >= borderMinX
+            && z <= borderMaxZ
+            && sectionMaxZ >= borderMinZ;
+    }
+
+    @Override
     public boolean chunkExists(int x, int z)
     {
         if (this.isDummyMode()) {

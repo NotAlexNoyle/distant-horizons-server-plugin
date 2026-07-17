@@ -405,7 +405,7 @@ public class DhSupport implements Configurable
 
         WorldInterface world = this.getWorldInterface(worldId).newInstance();
 
-        boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true);
+        boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true) && world.isInsideWorldBorder(worldX, worldZ, Lod.width);
 
         Map<Long, CompletableFuture<Boolean>> loads = new HashMap<>();
 
