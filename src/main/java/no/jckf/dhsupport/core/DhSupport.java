@@ -48,8 +48,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 public class DhSupport implements Configurable
@@ -439,6 +437,16 @@ public class DhSupport implements Configurable
                 if (loadRejected) {
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);
+                } else if (!manageChunks) {
+                    // This only executes for benchmark runs, and ensures that LOD builders receive a world interface that has already cached the necessary chunks.
+                    // The normal execution path, with manageChunks=true, performs caching during chunk loading.
+                    final int seaLevel = world.getSeaLevel();
+
+                    Coordinates.foreachChunkInSection(
+                        position.getX(),
+                        position.getZ(),
+                        (chunkWorldX, chunkWorldZ) -> world.getMaterialAt(chunkWorldX, seaLevel, chunkWorldZ)
+                    );
                 }
 
                 // No LOD was found. Start building a new one.

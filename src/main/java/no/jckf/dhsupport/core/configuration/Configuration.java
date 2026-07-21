@@ -21,7 +21,6 @@ package no.jckf.dhsupport.core.configuration;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
