@@ -151,13 +151,18 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected ChunkSnapshot getChunk(int x, int z)
     {
+        return this.getChunk(x, z, null);
+    }
+
+    protected ChunkSnapshot getChunk(int x, int z, @Nullable ChunkSnapshot alreadyLoaded)
+    {
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
         int sectionX = Coordinates.chunkToSection(chunkX);
         int sectionZ = Coordinates.chunkToSection(chunkZ);
 
-        if (this.sectionX == null) {
+        if (this.sectionX == null || this.sectionZ == null) {
             this.sectionX = sectionX;
             this.sectionZ = sectionZ;
         } else if (this.sectionX != sectionX || this.sectionZ != sectionZ) {
@@ -177,7 +182,9 @@ public class BukkitWorldInterface implements WorldInterface
 
         Scheduler scheduler = this.plugin.getDhSupport().getScheduler();
 
-        if (scheduler.canReadWorldAsync()) {
+        if (alreadyLoaded != null) {
+            chunk = alreadyLoaded;
+        } else if (scheduler.canReadWorldAsync()) {
             chunk = this.world.getChunkAt(chunkX, chunkZ).getChunkSnapshot(true, true, false);
         } else {
             chunk = scheduler.runOnRegionThread(world.getUID(), x, z, () ->
@@ -408,7 +415,13 @@ public class BukkitWorldInterface implements WorldInterface
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
-        return this.world.loadChunk(chunkX, chunkZ, false);
+        if (!this.world.loadChunk(chunkX, chunkZ, false)) {
+            return false;
+        }
+
+        this.getChunk(x, z);
+
+        return true;
     }
 
     @Override
@@ -421,7 +434,13 @@ public class BukkitWorldInterface implements WorldInterface
         int chunkX = Coordinates.blockToChunk(x);
         int chunkZ = Coordinates.blockToChunk(z);
 
-        return this.world.loadChunk(chunkX, chunkZ, true);
+        if (!this.world.loadChunk(chunkX, chunkZ, true)) {
+            return false;
+        }
+
+        this.getChunk(x, z);
+
+        return true;
     }
 
     @Override
@@ -439,9 +458,16 @@ public class BukkitWorldInterface implements WorldInterface
         int chunkZ = Coordinates.blockToChunk(z);
 
         try {
-            CompletableFuture<Chunk> chunkFuture = (CompletableFuture<Chunk>) this.getChunkAtAsync.invoke(this.world, chunkX, chunkZ, false);
+            return ((CompletableFuture<Chunk>) this.getChunkAtAsync.invoke(this.world, chunkX, chunkZ, false))
+                .thenApply((chunk) -> {
+                    if (chunk == null) {
+                        return false;
+                    }
 
-            return chunkFuture.thenApply(Objects::nonNull);
+                    this.getChunk(x, z, chunk.getChunkSnapshot(true, true, false));
+
+                    return true;
+                });
         } catch (InvocationTargetException | IllegalAccessException exception) {
             throw new RuntimeException(exception);
         }
@@ -462,9 +488,16 @@ public class BukkitWorldInterface implements WorldInterface
         int chunkZ = Coordinates.blockToChunk(z);
 
         try {
-            CompletableFuture<Chunk> chunkFuture = (CompletableFuture<Chunk>) this.getChunkAtAsync.invoke(this.world, chunkX, chunkZ, true);
+            return ((CompletableFuture<Chunk>) this.getChunkAtAsync.invoke(this.world, chunkX, chunkZ, true))
+                .thenApply((chunk) -> {
+                    if (chunk == null) {
+                        return false;
+                    }
 
-            return chunkFuture.thenApply(Objects::nonNull);
+                    this.getChunk(x, z, chunk.getChunkSnapshot(true, true, false));
+
+                    return true;
+                });
         } catch (InvocationTargetException | IllegalAccessException exception) {
             throw new RuntimeException(exception);
         }

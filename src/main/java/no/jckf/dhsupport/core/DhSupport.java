@@ -400,64 +400,46 @@ public class DhSupport implements Configurable
 
     protected CompletableFuture<LodModel> generateLod(UUID worldId, SectionPosition position, boolean manageChunks)
     {
-        int worldX = Coordinates.sectionToBlock(position.getX());
-        int worldZ = Coordinates.sectionToBlock(position.getZ());
+        int sectionWorldX = Coordinates.sectionToBlock(position.getX());
+        int sectionWorldZ = Coordinates.sectionToBlock(position.getZ());
 
         WorldInterface world = this.getWorldInterface(worldId).newInstance();
 
-        boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true) && world.isInsideWorldBorder(worldX, worldZ, Lod.width);
+        boolean generateNewChunks = world.getConfig().getBool(DhsConfig.GENERATE_NEW_CHUNKS, true) && world.isInsideWorldBorder(sectionWorldX, sectionWorldZ, Lod.width);
 
-        Map<Long, CompletableFuture<Boolean>> loads = new HashMap<>();
+        List<CompletableFuture<Boolean>> loads = new ArrayList<>();
 
         if (manageChunks) {
             // Load all the chunks we need for this request.
-            Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
-                if (!world.isChunkLoaded(chunkX, chunkZ)) {
-                    if (generateNewChunks) {
-                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadOrGenerateChunkAsync(chunkX, chunkZ));
-                    } else {
-                        loads.put(Coordinates.pack(chunkX, chunkZ), world.loadChunkAsync(chunkX, chunkZ));
-                    }
-                }
+            Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkWorldX, chunkWorldZ) -> {
+                final boolean alreadyLoaded = world.isChunkLoaded(chunkWorldX, chunkWorldZ);
+
+                loads.add(
+                    (generateNewChunks ? world.loadOrGenerateChunkAsync(chunkWorldX, chunkWorldZ) : world.loadChunkAsync(chunkWorldX, chunkWorldZ))
+                        .whenComplete((loaded, throwable) -> {
+                            if (!alreadyLoaded) {
+                                world.discardChunk(chunkWorldX, chunkWorldZ);
+                            }
+                        })
+                        .exceptionally((throwable -> {
+                            this.warning(throwable.getMessage());
+
+                            return false;
+                        }))
+                );
             });
         }
 
         // Wait for chunk loads, then...
-        return CompletableFuture.allOf(loads.values().toArray(new CompletableFuture[0]))
+        return CompletableFuture.allOf(loads.toArray(new CompletableFuture[0]))
             .thenComposeAsync((asd) -> {
-                boolean loadRejected = loads
-                    .values()
-                    .stream()
-                    .map(loadRequest -> {
-                        try {
-                            return loadRequest.get();
-                        } catch (InterruptedException | ExecutionException exception) {
-                            return false;
-                        }
-                    })
-                    .anyMatch(Predicate.isEqual(false));
+                boolean loadRejected = loads.stream()
+                    .anyMatch((load) -> !load.join());
 
                 if (loadRejected) {
                     // Use dummy chunks instead of real world data.
                     world.setDummyMode(true);
-                } else {
-                    // Prime chunk data in world interface.
-                    Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkX, chunkZ) -> {
-                        world.getMaterialAt(chunkX, world.getSeaLevel(), chunkZ);
-                    });
                 }
-
-                // Discard the chunks we loaded.
-                this.getScheduler().runOnRegionThread(worldId, worldX, worldZ, () -> {
-                    for (long packed : loads.keySet()) {
-                        world.discardChunk(
-                            Coordinates.unpackX(packed),
-                            Coordinates.unpackZ(packed)
-                        );
-                    }
-
-                    return null;
-                });
 
                 // No LOD was found. Start building a new one.
                 CompletableFuture<Lod> lodFuture = this.queueBuilder(worldId, position, this.getBuilder(world, position));
