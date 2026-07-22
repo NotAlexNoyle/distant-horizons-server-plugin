@@ -118,4 +118,9 @@ public class Configuration
     {
         return (int) this.variables.compute(key, (k, v) -> v == null ? 1 : (int) v + 1);
     }
+
+    public int decrement(String key)
+    {
+        return (int) this.variables.compute(key, (k, v) -> v == null ? -1 : (int) v - 1);
+    }
 }

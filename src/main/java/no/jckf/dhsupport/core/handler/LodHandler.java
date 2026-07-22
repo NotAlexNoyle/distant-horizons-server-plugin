@@ -30,6 +30,7 @@ import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.Bukkit;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LodHandler
 {
@@ -38,6 +39,8 @@ public class LodHandler
     protected DhSupport dhSupport;
 
     protected PluginMessageHandler pluginMessageHandler;
+
+    protected AtomicInteger requestsInFlight = new AtomicInteger(0);
 
     public LodHandler(DhSupport dhSupport, PluginMessageHandler pluginMessageHandler)
     {
@@ -100,7 +103,35 @@ public class LodHandler
                 return;
             }
 
+            int clientRateLimit = playerConfig.getInt(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT, 0);
+            int serverRateLimit = dhsConfig.getInt(DhsConfig.SERVER_LOD_REQUEST_CONCURRENCY_LIMIT, 0);
+
+            boolean exceedsClientRateLimit = playerConfig.increment("active-requests") > clientRateLimit;
+            boolean exceedsServerRateLimit = serverRateLimit > 0 && this.requestsInFlight.incrementAndGet() > serverRateLimit;
+
+            if (exceedsClientRateLimit || exceedsServerRateLimit) {
+                if (serverRateLimit > 0) {
+                    this.requestsInFlight.decrementAndGet();
+                }
+
+                playerConfig.decrement("active-requests");
+
+                ExceptionMessage exceptionMessage = new ExceptionMessage();
+                exceptionMessage.isResponseTo(requestMessage);
+                exceptionMessage.setTypeId(ExceptionMessage.TYPE_RATE_LIMITED);
+                exceptionMessage.setMessage("Rate limited by the server");
+                this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), exceptionMessage);
+                return;
+            }
+
             this.dhSupport.getLod(worldUuid, position)
+                .whenComplete((lodModel, exception) -> {
+                    if (serverRateLimit > 0) {
+                        this.requestsInFlight.decrementAndGet();
+                    }
+
+                    playerConfig.decrement("active-requests");
+                })
                 .thenAccept((lodModel) -> {
                     if (lodModel == null) {
                         ExceptionMessage exceptionMessage = new ExceptionMessage();

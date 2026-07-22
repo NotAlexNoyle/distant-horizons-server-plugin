@@ -32,7 +32,14 @@ public abstract class DhsConfig
 
     public static String DISTANT_GENERATION_ENABLED = "distant_generation_enabled";
 
+    /**
+     * @deprecated Replaced by CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT.
+     */
     public static String FULL_DATA_REQUEST_CONCURRENCY_LIMIT = "full_data_request_concurrency_limit";
+
+    public static String CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT = "client_lod_request_concurrency_limit";
+
+    public static String SERVER_LOD_REQUEST_CONCURRENCY_LIMIT = "server_lod_request_concurrency_limit";
 
     public static String REAL_TIME_UPDATES_ENABLED = "real_time_updates_enabled";
 

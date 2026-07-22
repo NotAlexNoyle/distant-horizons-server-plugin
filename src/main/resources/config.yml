@@ -14,10 +14,15 @@ render_distance: 1024
 # Default: true
 distant_generation_enabled: true
 
-# Number of parallel LOD requests per client.
+# Maximum number of concurrent LOD requests per client.
 # Required.
 # Default: 20
-full_data_request_concurrency_limit: 20
+client_lod_request_concurrency_limit: 20
+
+# Maximum concurrent LOD requests server-wide, across all players. 0 = unlimited.
+# Optional.
+# Default: 0
+#server_lod_request_concurrency_limit: 100
 
 # Send LOD updates to players in real-time?
 # Required.
@@ -235,4 +240,4 @@ scheduler_threads: 4
 #debug: true
 
 # Don't touch :)
-config_version: 10
+config_version: 11

@@ -31,7 +31,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
         DhsConfig.BORDER_CENTER_X,
         DhsConfig.BORDER_CENTER_Z,
         DhsConfig.BORDER_RADIUS,
-        DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT,
+        DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT,
         DhsConfig.REAL_TIME_UPDATES_ENABLED,
         DhsConfig.REAL_TIME_UPDATE_RADIUS,
         DhsConfig.LOGIN_DATA_SYNC_ENABLED,
@@ -44,7 +44,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
 
     protected boolean distantGenerationEnabled;
 
-    protected int fullDataRequestConcurrencyLimit;
+    protected int clientLodRequestConcurrencyLimit;
 
     protected boolean realTimeUpdatesEnabled;
 
@@ -84,14 +84,14 @@ public class RemotePlayerConfigMessage extends PluginMessage
         return this.distantGenerationEnabled;
     }
 
-    public void setFullDataRequestConcurrencyLimit(int limit)
+    public void setClientLodRequestConcurrencyLimit(int limit)
     {
-        this.fullDataRequestConcurrencyLimit = limit;
+        this.clientLodRequestConcurrencyLimit = limit;
     }
 
-    public int getFullDataRequestConcurrencyLimit()
+    public int getClientLodRequestConcurrencyLimit()
     {
-        return this.fullDataRequestConcurrencyLimit;
+        return this.clientLodRequestConcurrencyLimit;
     }
 
     public void setRealTimeUpdatesEnabled(boolean enabled)
@@ -194,7 +194,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
         encoder.writeInt(this.borderCenterZ);
         encoder.writeInt(this.borderRadius);
 
-        encoder.writeInt(this.fullDataRequestConcurrencyLimit);
+        encoder.writeInt(this.clientLodRequestConcurrencyLimit);
 
         encoder.writeBoolean(this.realTimeUpdatesEnabled);
         encoder.writeInt(this.realTimeUpdateRadius);
@@ -216,7 +216,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
         this.borderCenterZ = decoder.readInt();
         this.borderRadius = decoder.readInt();
 
-        this.fullDataRequestConcurrencyLimit = decoder.readInt();
+        this.clientLodRequestConcurrencyLimit = decoder.readInt();
 
         this.realTimeUpdatesEnabled = decoder.readBoolean();
         this.realTimeUpdateRadius = decoder.readInt();
@@ -241,7 +241,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
         this.borderCenterZ = borderCenterZ == null ? 0 : borderCenterZ;
         this.borderRadius = borderRadius == null ? 0 : borderRadius;
 
-        this.fullDataRequestConcurrencyLimit = config.getInt(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT);
+        this.clientLodRequestConcurrencyLimit = config.getInt(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT);
 
         this.realTimeUpdatesEnabled = config.getBool(DhsConfig.REAL_TIME_UPDATES_ENABLED);
         this.realTimeUpdateRadius = config.getInt(DhsConfig.REAL_TIME_UPDATE_RADIUS);
@@ -264,7 +264,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
         config.set(DhsConfig.BORDER_CENTER_Z, this.borderCenterZ);
         config.set(DhsConfig.BORDER_RADIUS, this.borderRadius);
 
-        config.set(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT, this.fullDataRequestConcurrencyLimit);
+        config.set(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT, this.clientLodRequestConcurrencyLimit);
 
         config.set(DhsConfig.REAL_TIME_UPDATES_ENABLED, this.realTimeUpdatesEnabled);
         config.set(DhsConfig.REAL_TIME_UPDATE_RADIUS, this.realTimeUpdateRadius);

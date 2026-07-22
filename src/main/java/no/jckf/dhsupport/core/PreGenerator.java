@@ -18,6 +18,7 @@
 
 package no.jckf.dhsupport.core;
 
+import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.database.models.LodModel;
 import no.jckf.dhsupport.core.dataobject.SectionPosition;
@@ -68,7 +69,12 @@ public class PreGenerator implements Runnable
 
     public void run()
     {
-        int rateLimit = this.world.getConfig().getInt(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT);
+        Configuration worldConfig = this.world.getConfig();
+
+        // Fall back to the old key in case the server's config file is for an older plugin version.
+        int rateLimit = worldConfig.has(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT)
+            ? worldConfig.getInt(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT)
+            : worldConfig.getInt(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT);
 
         int currentX = this.centerX;
         int currentZ = this.centerZ;

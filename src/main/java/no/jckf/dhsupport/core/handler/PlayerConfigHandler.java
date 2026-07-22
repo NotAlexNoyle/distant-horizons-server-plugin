@@ -129,6 +129,11 @@ public class PlayerConfigHandler
                         keepValue = false;
                     }
 
+                    // If no value was found under the new key, read the old key to see if the server's config file is for an older plugin version.
+                    if (key.equals(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT) && dhsValue == null) {
+                        dhsValue = dhsConfig.get(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT);
+                    }
+
                     // TODO: This is ugly. Move to comparator closures like in DH.
                     if (key.equals(DhsConfig.BORDER_CENTER_X)) {
                         keepValue = world.getWorldBorderX();
