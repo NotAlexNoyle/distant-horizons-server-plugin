@@ -491,7 +491,14 @@ public class DhSupport implements Configurable
             return;
         }
 
-        this.debug("Touched LOD at " + this.getWorldInterface(worldId).getName() + " " + x + " " + z + (reason == null ? "." : ": " + reason));
+        WorldInterface world = this.getWorldInterface(worldId);
+
+        if (world == null) {
+            this.warning("Received a touch for unloaded world " + worldId + ". Ignoring.");
+            return;
+        }
+
+        this.debug("Touched LOD at " + world.getName() + " " + x + " " + z + (reason == null ? "." : ": " + reason));
 
         this.touchedLods.put(key, lodModel);
     }
