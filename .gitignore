@@ -27,6 +27,9 @@ replay_pid*
 /.idea
 /*.iml
 
+# Visual Studio Code project config
+/.vscode
+
 # Gradle output
 /.gradle
 /build

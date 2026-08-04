@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.gradleup.shadow' version '8.3.8'
+    id 'com.gradleup.shadow' version '9.6.1'
 }
 
 group = 'no.jckf.dhs'
@@ -18,7 +18,7 @@ def paperVersions = [
 repositories {
     mavenCentral()
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
-    maven { url = 'https://jitpack.io/' }
+    maven { url = 'https://repo.tcoded.com/releases' }
 }
 
 configurations {
@@ -29,16 +29,16 @@ configurations {
 }
 
 dependencies {
-    compileOnly 'org.jetbrains:annotations:25.0.0'
+    compileOnly 'org.jetbrains:annotations:26.1.0'
 
-    implementation 'com.google.guava:guava:33.3.1-jre'
+    implementation 'com.google.guava:guava:33.6.0-jre'
 
-    shade 'org.bstats:bstats-bukkit:3.1.0'
-    shade 'org.json:json:20240303'
-    shade 'org.tukaani:xz:1.10'
-    shade 'com.github.technicallycoded:FoliaLib:v0.4.3'
+    shade 'org.bstats:bstats-bukkit:3.2.1'
+    shade 'org.json:json:20260719'
+    shade 'org.tukaani:xz:1.12'
+    shade 'com.tcoded:FoliaLib:0.5.2'
 
-    testImplementation 'junit:junit:4.11'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 paperVersions.each { mcVersion ->
@@ -53,7 +53,7 @@ paperVersions.each { mcVersion ->
     // Custom processResources task per version
     def processTask = tasks.register("processResources_${taskSuffix}", Copy) {
         from(sourceSets[sourceSetName].resources.srcDirs)
-        into("$buildDir/resources-processed/$mcVersion")
+        into(layout.buildDirectory.dir("resources-processed/$mcVersion"))
 
         include '**/*.yml'
 
@@ -88,7 +88,7 @@ paperVersions.each { mcVersion ->
             exclude '**/*.yml'
         }
 
-        from("$buildDir/resources-processed/$mcVersion")
+        from(layout.buildDirectory.dir("resources-processed/$mcVersion"))
 
         configurations = [project.configurations.shade]
 
