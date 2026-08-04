@@ -80,6 +80,10 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected int lightOffset = 0;
 
+    protected Integer seaLevel;
+
+    protected Integer dummyMaxY;
+
     public BukkitWorldInterface(DhSupportBukkitPlugin plugin, World world, Configuration config)
     {
         this.plugin = plugin;
@@ -557,7 +561,11 @@ public class BukkitWorldInterface implements WorldInterface
     @Override
     public int getSeaLevel()
     {
-        return Math.min(Math.max(this.getMinY(), this.world.getSeaLevel()), this.getMaxY());
+        if (this.seaLevel == null) {
+            this.seaLevel = Math.clamp(this.world.getSeaLevel(), this.getMinY(), this.getMaxY() - 1);
+        }
+
+        return this.seaLevel;
     }
 
     @Override
@@ -586,10 +594,14 @@ public class BukkitWorldInterface implements WorldInterface
         }
 
         if (this.isDummyMode()) {
-            return this.getDummyColumn().isEmpty() ? this.getMinY() : Collections.max(this.getDummyColumn().keySet());
+            if (this.dummyMaxY == null) {
+                this.dummyMaxY = this.getDummyColumn().isEmpty() ? this.getMinY() : Collections.max(this.getDummyColumn().keySet());
+            }
+
+            return this.dummyMaxY;
         }
 
-        return this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z));
+        return Math.clamp(this.getChunk(x, z).getHighestBlockYAt(Coordinates.blockToChunkRelative(x), Coordinates.blockToChunkRelative(z)), this.getMinY(), this.getMaxY() - 1);
     }
 
     @Override
