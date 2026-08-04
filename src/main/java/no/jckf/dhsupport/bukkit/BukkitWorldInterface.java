@@ -631,6 +631,10 @@ public class BukkitWorldInterface implements WorldInterface
 
     public MaterialRecord getMaterialRecordAt(int x, int y, int z)
     {
+        if (this.isDummyMode()) {
+            return new MaterialRecord(Utils.namespaceKey(this.getDummyMaterialAt(y)), false);
+        }
+
         return this.materialCache.computeIfAbsent(
             this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)),
             (mat) -> {
