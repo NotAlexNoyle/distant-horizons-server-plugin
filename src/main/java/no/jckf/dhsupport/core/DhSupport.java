@@ -494,6 +494,11 @@ public class DhSupport implements Configurable
 
         String key = lodModel.toString();
 
+        // Ignore events triggered during LOD generation.
+        if (this.queuedBuilders.containsKey(key)) {
+            return;
+        }
+
         if (this.touchedLods.containsKey(key)) {
             return;
         }
