@@ -75,6 +75,8 @@ public abstract class DhsConfig
 
     public static String GENERATE_NEW_CHUNKS_WARNING = "generate_new_chunks_warning";
 
+    public static String DISCARD_NEW_CHUNKS = "discard_new_chunks";
+
     public static String BUILDER_TYPE = "builder_type";
 
     public static String TRUST_HEIGHT_MAP = "trust_height_map";

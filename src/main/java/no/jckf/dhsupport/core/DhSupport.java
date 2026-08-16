@@ -409,6 +409,8 @@ public class DhSupport implements Configurable
         List<CompletableFuture<Boolean>> loads = new ArrayList<>();
 
         if (manageChunks) {
+            boolean discardNewChunks = world.getConfig().getBool(DhsConfig.DISCARD_NEW_CHUNKS, false);
+
             // Load all the chunks we need for this request.
             Coordinates.foreachChunkInSection(position.getX(), position.getZ(), (chunkWorldX, chunkWorldZ) -> {
                 final boolean alreadyLoaded = world.isChunkLoaded(chunkWorldX, chunkWorldZ);
@@ -417,7 +419,11 @@ public class DhSupport implements Configurable
                     (generateNewChunks ? world.loadOrGenerateChunkAsync(chunkWorldX, chunkWorldZ) : world.loadChunkAsync(chunkWorldX, chunkWorldZ))
                         .whenComplete((loaded, throwable) -> {
                             if (!alreadyLoaded) {
-                                world.discardChunk(chunkWorldX, chunkWorldZ);
+                                if (discardNewChunks) {
+                                    world.discardChunk(chunkWorldX, chunkWorldZ);
+                                } else {
+                                    world.unloadChunkAsync(chunkWorldX, chunkWorldZ);
+                                }
                             }
                         })
                         .exceptionally((throwable -> {

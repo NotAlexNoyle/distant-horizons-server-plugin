@@ -65,6 +65,13 @@ max_data_transfer_speed: 0
 # Default: true
 #generate_new_chunks_warning: false
 
+# Should new chunks be saved to disk, or should the plugin attempt to discard them?
+# There is no guarantee that the server will respect every discard request, so chunks may still end up saved to disk.
+# Before you consider enabling this feature, please see https://github.com/PaperMC/Paper/issues/14188
+# Optional.
+# Default: false
+#discard_new_chunks: true
+
 # Specs for a fake LOD to send when chunk generation is disabled and LOD requests otherwise would have been rejected.
 # Optional.
 # Default: Disabled
@@ -240,4 +247,4 @@ scheduler_threads: 4
 #debug: true
 
 # Don't touch :)
-config_version: 11
+config_version: 12
