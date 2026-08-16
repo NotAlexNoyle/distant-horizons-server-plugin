@@ -23,6 +23,12 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 
 import javax.annotation.Nullable;
 
+/**
+ * A view over a backing {@link Configuration}, scoped to a single world via a
+ * {@code worlds.<name>.} key prefix. Holds no state of its own — every method reads or writes
+ * through to the backing config, falling back to the unprefixed (global) key when a
+ * world-specific value isn't set.
+ */
 public class WorldConfiguration extends Configuration
 {
     protected static String WORLD_PREFIX = "worlds.%s.";
@@ -37,23 +43,53 @@ public class WorldConfiguration extends Configuration
         this.config = config;
     }
 
+    protected String key(String key)
+    {
+        return WORLD_PREFIX.formatted(this.world.getName()) + key;
+    }
+
     @Override
     public void set(String key, @Nullable Object value)
     {
-        this.config.set(WORLD_PREFIX.formatted(this.world.getName()) + key, value);
+        this.config.set(this.key(key), value);
     }
 
     @Override
     public void unset(String key)
     {
-        this.config.unset(WORLD_PREFIX.formatted(this.world.getName()) + key);
+        this.config.unset(this.key(key));
     }
 
     @Override
     public @PolyNull Object get(String key, @PolyNull Object defaultValue)
     {
-        Object specific = this.config.get(WORLD_PREFIX.formatted(this.world.getName()) + key);
+        Object specific = this.config.get(this.key(key));
 
         return specific == null ? this.config.get(key, defaultValue) : specific;
+    }
+
+    @Override
+    public boolean has(String key)
+    {
+        // Mirror get()'s resolution order: world-specific first, then the global key.
+        return this.config.has(this.key(key)) || this.config.has(key);
+    }
+
+    @Override
+    public void clear()
+    {
+        this.config.clear(WORLD_PREFIX.formatted(this.world.getName()));
+    }
+
+    @Override
+    public int increment(String key)
+    {
+        return this.config.increment(this.key(key));
+    }
+
+    @Override
+    public int decrement(String key)
+    {
+        return this.config.decrement(this.key(key));
     }
 }

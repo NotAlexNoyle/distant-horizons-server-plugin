@@ -48,6 +48,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DhSupport implements Configurable
@@ -646,6 +647,12 @@ public class DhSupport implements Configurable
 
         this.getScheduler().runOnSeparateThread(() -> {
             this.preGenerators.get(world.getId()).run();
+
+            return null;
+        }).exceptionally((exception) -> {
+            this.getLogger().log(Level.WARNING, "Pre-generation of " + world.getName() + " failed.", exception);
+
+            this.stopPreGenerator(world);
 
             return null;
         });

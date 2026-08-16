@@ -72,9 +72,9 @@ public class PreGenerator implements Runnable
         Configuration worldConfig = this.world.getConfig();
 
         // Fall back to the old key in case the server's config file is for an older plugin version.
-        int rateLimit = worldConfig.has(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT)
+        int rateLimit = Math.max(1, worldConfig.has(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT)
             ? worldConfig.getInt(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT)
-            : worldConfig.getInt(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT);
+            : worldConfig.getInt(DhsConfig.FULL_DATA_REQUEST_CONCURRENCY_LIMIT, 20));
 
         int currentX = this.centerX;
         int currentZ = this.centerZ;

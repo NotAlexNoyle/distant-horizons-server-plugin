@@ -35,6 +35,11 @@ public class Configuration
         this.variables.clear();
     }
 
+    public void clear(String prefix)
+    {
+        this.variables.keySet().removeIf((key) -> key.startsWith(prefix));
+    }
+
     public boolean has(String key)
     {
         return this.variables.containsKey(key);
