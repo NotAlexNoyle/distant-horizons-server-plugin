@@ -106,7 +106,16 @@ public class LodHandler
             int clientRateLimit = playerConfig.getInt(DhsConfig.CLIENT_LOD_REQUEST_CONCURRENCY_LIMIT, 0);
             int serverRateLimit = dhsConfig.getInt(DhsConfig.SERVER_LOD_REQUEST_CONCURRENCY_LIMIT, 0);
 
-            boolean exceedsClientRateLimit = playerConfig.increment("active-requests") > clientRateLimit;
+            // The client runs its sync-on-load and generation queues independently, each against its own limit.
+            boolean isSyncRequest = requestMessage.getTimestamp() != null;
+
+            if (isSyncRequest) {
+                clientRateLimit = playerConfig.getInt(DhsConfig.LOGIN_DATA_SYNC_RC_LIMIT, 0);
+            }
+
+            String activeRequestCounter = isSyncRequest ? "active-sync-requests" : "active-requests";
+
+            boolean exceedsClientRateLimit = playerConfig.increment(activeRequestCounter) > clientRateLimit;
             boolean exceedsServerRateLimit = serverRateLimit > 0 && this.requestsInFlight.incrementAndGet() > serverRateLimit;
 
             if (exceedsClientRateLimit || exceedsServerRateLimit) {
@@ -114,7 +123,7 @@ public class LodHandler
                     this.requestsInFlight.decrementAndGet();
                 }
 
-                playerConfig.decrement("active-requests");
+                playerConfig.decrement(activeRequestCounter);
 
                 ExceptionMessage exceptionMessage = new ExceptionMessage();
                 exceptionMessage.isResponseTo(requestMessage);
@@ -130,7 +139,7 @@ public class LodHandler
                         this.requestsInFlight.decrementAndGet();
                     }
 
-                    playerConfig.decrement("active-requests");
+                    playerConfig.decrement(activeRequestCounter);
                 })
                 .thenAccept((lodModel) -> {
                     if (lodModel == null) {
