@@ -22,6 +22,7 @@ import no.jckf.dhsupport.core.bytestream.Decoder;
 import no.jckf.dhsupport.core.bytestream.Encoder;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
+import no.jckf.dhsupport.core.enums.GeneratorPlan;
 
 public class RemotePlayerConfigMessage extends PluginMessage
 {
@@ -187,7 +188,8 @@ public class RemotePlayerConfigMessage extends PluginMessage
     @Override
     public void encode(Encoder encoder)
     {
-        encoder.writeBoolean(this.distantGenerationEnabled);
+        // Sent as the most permissive plan, so the client's own plan decides the generation mode.
+        encoder.writeByte((this.distantGenerationEnabled ? GeneratorPlan.SURFACE_THEN_CHUNKS : GeneratorPlan.DISABLED).ordinal());
         encoder.writeInt(this.renderDistance);
 
         encoder.writeInt(this.borderCenterX);
@@ -209,7 +211,7 @@ public class RemotePlayerConfigMessage extends PluginMessage
     @Override
     public void decode(Decoder decoder)
     {
-        this.distantGenerationEnabled = decoder.readBoolean();
+        this.distantGenerationEnabled = GeneratorPlan.byOrdinal(decoder.readByte()).generationEnabled;
         this.renderDistance = decoder.readInt();
 
         this.borderCenterX = decoder.readInt();

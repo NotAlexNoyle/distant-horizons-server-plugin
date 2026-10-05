@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class LodModel extends Model
 {
-    public static int VERSION = 2;
+    public static int VERSION = 3;
 
     public static LodModel create()
     {

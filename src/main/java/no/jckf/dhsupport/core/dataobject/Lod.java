@@ -40,6 +40,8 @@ public class Lod extends DataObject
 
     public static CompressionType compressionType = CompressionType.LZMA2;
 
+    protected static final int MAX_DICT_SIZE = 1 << 20;
+
     public static int width = 64;
 
     protected static volatile byte[] compressedGenerationStep;
@@ -159,6 +161,7 @@ public class Lod extends DataObject
 
         encoder.writeBoolean(true); // Apply to parent
         encoder.writeBoolean(false); // Apply to children
+        encoder.writeBoolean(false); // Regenerate
 
         encoder.writeLong(now); // Created at
         encoder.writeLong(now); // Updated at
@@ -171,7 +174,13 @@ public class Lod extends DataObject
         try {
             LZMA2Options options = new LZMA2Options(3);
 
-            options.setDictSize(Math.max(LZMA2Options.DICT_SIZE_MIN, Math.min(uncompressedData.length, 1 << 20)));
+            int dictSize = LZMA2Options.DICT_SIZE_MIN;
+
+            while (dictSize < uncompressedData.length && dictSize < MAX_DICT_SIZE) {
+                dictSize <<= 1;
+            }
+
+            options.setDictSize(dictSize);
 
             OutputStream compressorStream = new XZOutputStream(compressedStream, options, XZ.CHECK_CRC64);
 
