@@ -96,7 +96,7 @@ public class PluginMessageHandler
         }
 
         if (message instanceof CloseReasonMessage) {
-            throw new RuntimeException(((CloseReasonMessage) message).getReason());
+            throw new ConnectionClosedException(((CloseReasonMessage) message).getReason());
         }
 
         message.setSender(senderUuid);

@@ -20,11 +20,14 @@ package no.jckf.dhsupport.bukkit.handler;
 
 import no.jckf.dhsupport.bukkit.BukkitPluginMessageSender;
 import no.jckf.dhsupport.bukkit.DhSupportBukkitPlugin;
+import no.jckf.dhsupport.core.handler.ConnectionClosedException;
 import no.jckf.dhsupport.core.handler.PluginMessageHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.logging.Level;
 
 public class PluginMessageProxy extends Handler implements PluginMessageListener
 {
@@ -58,7 +61,11 @@ public class PluginMessageProxy extends Handler implements PluginMessageListener
     {
         try {
             this.pluginMessageHandler.onPluginMessageReceived(channel, player.getUniqueId(), message);
+        } catch (ConnectionClosedException exception) {
+            player.sendMessage(ChatColor.RED + "Distant Horizons: " + exception.getMessage());
         } catch (RuntimeException exception) {
+            this.plugin.getDhSupport().getLogger().log(Level.WARNING, "Error while handling plugin message from " + player.getName() + ".", exception);
+
             player.sendMessage(ChatColor.RED + "Distant Horizons: " + exception.getMessage());
         }
     }
