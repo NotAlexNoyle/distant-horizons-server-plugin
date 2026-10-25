@@ -22,8 +22,8 @@ import no.jckf.dhsupport.core.Coordinates;
 import no.jckf.dhsupport.core.Utils;
 import no.jckf.dhsupport.core.configuration.Configuration;
 import no.jckf.dhsupport.core.configuration.DhsConfig;
-import no.jckf.dhsupport.core.configuration.WorldConfiguration;
 import no.jckf.dhsupport.core.scheduling.Scheduler;
+import no.jckf.dhsupport.core.world.AbstractWorldInterface;
 import no.jckf.dhsupport.core.world.MaterialRecord;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.*;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-public class BukkitWorldInterface implements WorldInterface
+public class BukkitWorldInterface extends AbstractWorldInterface
 {
     protected static boolean BIOME_KEY_WARNING_SENT = false;
 
@@ -46,13 +46,7 @@ public class BukkitWorldInterface implements WorldInterface
 
     protected World world;
 
-    protected Configuration config;
-
-    protected WorldConfiguration worldConfig;
-
     protected Logger logger;
-
-    protected boolean dummyMode = false;
 
     protected Map<Integer, String> dummyColumn;
 
@@ -86,10 +80,10 @@ public class BukkitWorldInterface implements WorldInterface
 
     public BukkitWorldInterface(DhSupportBukkitPlugin plugin, World world, Configuration config)
     {
+        super(world.getName(), config);
+
         this.plugin = plugin;
         this.world = world;
-        this.config = config;
-        this.worldConfig = new WorldConfiguration(this, config);
 
         this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
         this.trustHeightMap = this.getConfig().getBool(DhsConfig.TRUST_HEIGHT_MAP, this.trustHeightMap);
@@ -213,18 +207,6 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
-    public String getName()
-    {
-        return this.world.getName();
-    }
-
-    @Override
-    public String getKey()
-    {
-        return this.getName().replaceAll("[^a-zA-Z0-9_-]", "");
-    }
-
-    @Override
     public double getCoordinateScale()
     {
         if (this.getCoordinateScale == null) {
@@ -243,18 +225,6 @@ public class BukkitWorldInterface implements WorldInterface
     protected boolean useVanillaWorldBorder()
     {
         return this.worldConfig.getBool(DhsConfig.USE_VANILLA_WORLD_BORDER, true);
-    }
-
-    @Override
-    public void setDummyMode(boolean enable)
-    {
-        this.dummyMode = enable;
-    }
-
-    @Override
-    public boolean isDummyMode()
-    {
-        return this.dummyMode;
     }
 
     protected Map<Integer, String> buildDummyColumn()
@@ -335,31 +305,6 @@ public class BukkitWorldInterface implements WorldInterface
         }
 
         return borderRadius;
-    }
-
-    @Override
-    public boolean isInsideWorldBorder(int x, int z, int areaWidth)
-    {
-        Integer borderCenterX = this.getWorldBorderX();
-        Integer borderCenterZ = this.getWorldBorderZ();
-        Integer borderRadius = this.getWorldBorderRadius();
-
-        if (borderCenterX == null || borderCenterZ == null || borderRadius == null) {
-            return true;
-        }
-
-        int borderMinX = borderCenterX - borderRadius;
-        int borderMaxX = borderCenterX + borderRadius;
-        int borderMinZ = borderCenterZ - borderRadius;
-        int borderMaxZ = borderCenterZ + borderRadius;
-
-        int sectionMaxX = x + (areaWidth - 1);
-        int sectionMaxZ = z + (areaWidth - 1);
-
-        return x <= borderMaxX
-            && sectionMaxX >= borderMinX
-            && z <= borderMaxZ
-            && sectionMaxZ >= borderMinZ;
     }
 
     @Override
@@ -626,12 +571,6 @@ public class BukkitWorldInterface implements WorldInterface
     }
 
     @Override
-    public String getBiomeAt(int x, int z)
-    {
-        return this.getBiomeAt(x, this.getSeaLevel(), z);
-    }
-
-    @Override
     public String getMaterialAt(int x, int y, int z)
     {
         if (this.isDummyMode()) {
@@ -752,12 +691,6 @@ public class BukkitWorldInterface implements WorldInterface
         }
 
         return (byte) this.getChunk(x, z).getBlockSkyLight(Coordinates.blockToChunkRelative(x), Math.clamp(y + this.lightOffset, this.getMinY(), this.getMaxY() - 1), Coordinates.blockToChunkRelative(z));
-    }
-
-    @Override
-    public Configuration getConfig()
-    {
-        return this.worldConfig;
     }
 
     @Override

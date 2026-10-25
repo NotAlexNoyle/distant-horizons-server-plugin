@@ -27,7 +27,6 @@ import no.jckf.dhsupport.core.message.plugin.FullDataChunkMessage;
 import no.jckf.dhsupport.core.message.plugin.FullDataSourceRequestMessage;
 import no.jckf.dhsupport.core.message.plugin.FullDataSourceResponseMessage;
 import no.jckf.dhsupport.core.world.WorldInterface;
-import org.bukkit.Bukkit;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,10 +63,18 @@ public class LodHandler
 
             Configuration dhsConfig = this.dhSupport.getConfig();
 
-            // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
-            UUID worldUuid = Bukkit.getWorld(requestMessage.getWorldName().substring(dhsConfig.getString(DhsConfig.LEVEL_KEY_PREFIX, "").length())).getUID();
+            WorldInterface world = this.dhSupport.getWorldInterfaceByLevelKey(requestMessage.getWorldName());
 
-            WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
+            if (world == null) {
+                ExceptionMessage exceptionMessage = new ExceptionMessage();
+                exceptionMessage.isResponseTo(requestMessage);
+                exceptionMessage.setTypeId(ExceptionMessage.TYPE_REQUEST_REJECTED);
+                exceptionMessage.setMessage("Unknown level " + requestMessage.getWorldName());
+                this.pluginMessageHandler.sendPluginMessage(requestMessage.getSender(), exceptionMessage);
+                return;
+            }
+
+            UUID worldUuid = world.getId();
 
             Configuration config = world.getConfig();
             Configuration playerConfig = this.dhSupport.getPlayerConfiguration(requestMessage.getSender(), worldUuid);

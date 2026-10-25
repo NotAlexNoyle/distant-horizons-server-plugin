@@ -232,6 +232,18 @@ public class DhSupport implements Configurable
         return this.worldInterfaces.get(id);
     }
 
+    @Nullable
+    public WorldInterface getWorldInterfaceByLevelKey(String levelKey)
+    {
+        for (WorldInterface world : this.worldInterfaces.values()) {
+            if (world.getLevelKey().equals(levelKey)) {
+                return world;
+            }
+        }
+
+        return null;
+    }
+
     public PluginMessageHandler getPluginMessageHandler()
     {
         return this.pluginMessageHandler;
@@ -565,12 +577,7 @@ public class DhSupport implements Configurable
                                     return;
                                 }
 
-                                String levelKeyPrefix = worldConfig.getString(DhsConfig.LEVEL_KEY_PREFIX);
-                                String levelKey = world.getKey();
-
-                                if (levelKeyPrefix != null) {
-                                    levelKey = levelKeyPrefix + levelKey;
-                                }
+                                String levelKey = world.getLevelKey();
 
                                 int lodChunkX = Coordinates.sectionToChunk(lodModelToDelete.getX());
                                 int lodChunkZ = Coordinates.sectionToChunk(lodModelToDelete.getZ());

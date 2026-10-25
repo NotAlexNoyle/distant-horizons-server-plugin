@@ -76,17 +76,10 @@ public class PlayerConfigHandler
 
             Configuration dhsConfig = world.getConfig();
 
-            String levelKeyPrefix = dhsConfig.getString(DhsConfig.LEVEL_KEY_PREFIX);
-            String levelKey = world.getKey();
-
-            if (levelKeyPrefix != null) {
-                levelKey = levelKeyPrefix + levelKey;
-            }
-
             LevelInitMessage levelInitResponse = new LevelInitMessage();
             levelInitResponse.setNamespacedKey(worldKey.toString());
             levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
-            levelInitResponse.setLevelKey(levelKey);
+            levelInitResponse.setLevelKey(world.getLevelKey());
             levelInitResponse.setTime(System.currentTimeMillis());
             this.pluginMessageHandler.sendPluginMessage(initRequestMessage.getSender(), levelInitResponse);
         });
