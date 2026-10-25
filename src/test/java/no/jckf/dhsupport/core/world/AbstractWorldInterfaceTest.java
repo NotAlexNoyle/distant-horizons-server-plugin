@@ -77,11 +77,31 @@ public class AbstractWorldInterfaceTest extends TestCase
         assertEquals("nether_world_nether", nether.getLevelKey());
     }
 
-    public void testPrefixIsNotSanitized()
+    public void testValidPrefixIsKept()
     {
-        this.globalConfig.set(DhsConfig.LEVEL_KEY_PREFIX, "my server:");
+        this.globalConfig.set(DhsConfig.LEVEL_KEY_PREFIX, "lobby@");
 
-        assertEquals("my server:world", new FakeWorldInterface("world", this.globalConfig).getLevelKey());
+        assertEquals("lobby@world", new FakeWorldInterface("world", this.globalConfig).getLevelKey());
+    }
+
+    public void testPrefixIsUsedAsIs()
+    {
+        // Invalid prefixes are not fixed up. DhSupport warns about the resulting level key instead.
+        this.globalConfig.set(DhsConfig.LEVEL_KEY_PREFIX, "my server.");
+
+        assertEquals("my server.world", new FakeWorldInterface("world", this.globalConfig).getLevelKey());
+    }
+
+    public void testServerKeyIsEmptyByDefault()
+    {
+        assertEquals("", new FakeWorldInterface("world", this.globalConfig).getServerKey());
+    }
+
+    public void testValidServerKeyIsKept()
+    {
+        this.globalConfig.set(DhsConfig.SERVER_KEY, "my-server_1");
+
+        assertEquals("my-server_1", new FakeWorldInterface("world", this.globalConfig).getServerKey());
     }
 
     public void testLevelKeyIsFixedAtConstruction()

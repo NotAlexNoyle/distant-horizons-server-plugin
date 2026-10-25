@@ -30,6 +30,8 @@ public abstract class AbstractWorldInterface implements WorldInterface
 
     protected String levelKey;
 
+    protected String serverKey;
+
     protected Configuration config;
 
     protected WorldConfiguration worldConfig;
@@ -43,8 +45,9 @@ public abstract class AbstractWorldInterface implements WorldInterface
         this.config = config;
         this.worldConfig = new WorldConfiguration(this, config);
 
-        // Not updated if the prefix changes at runtime.
+        // Not updated if the config changes at runtime.
         this.levelKey = this.worldConfig.getString(DhsConfig.LEVEL_KEY_PREFIX, "") + this.key;
+        this.serverKey = this.worldConfig.getString(DhsConfig.SERVER_KEY, "");
     }
 
     @Override
@@ -63,6 +66,12 @@ public abstract class AbstractWorldInterface implements WorldInterface
     public String getLevelKey()
     {
         return this.levelKey;
+    }
+
+    @Override
+    public String getServerKey()
+    {
+        return this.serverKey;
     }
 
     @Override

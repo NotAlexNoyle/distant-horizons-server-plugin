@@ -11,6 +11,7 @@
 #
 # Environment:
 #   LEVEL_NAME   Name of the main world. Defaults to "DH Test World".
+#   SERVER_KEY   Server key in the plugin config. Defaults to an invalid one, which the plugin must not send.
 #   SKIP_BUILD   Set to 1 to reuse the last built plugin jar.
 #   PLUGIN_JAR   Test this plugin jar instead of building one.
 #   KEEP_RUN     Set to 1 to keep testbed/run/test after a passing run. It is always kept after a failure.
@@ -23,6 +24,7 @@ require_setup
 
 export RUN_DIR="$TESTBED_DIR/run/test"
 export LEVEL_NAME="${LEVEL_NAME:-DH Test World}"
+export SERVER_KEY="${SERVER_KEY:-DH testbed server!}"
 export PLAYER_NAME
 
 SERVER_DIR="$RUN_DIR/server"
@@ -32,7 +34,23 @@ SERVER_OUT="$RUN_DIR/server.out"
 CLIENT_OUT="$RUN_DIR/client.out"
 CONSOLE="$RUN_DIR/console"
 
-LEVEL_KEY="$(echo "$LEVEL_NAME" | sed 's/[^a-zA-Z0-9_-]//g')"
+# Expected level key for a world name, without a prefix. Mirrors AbstractWorldInterface.
+expected_level_key()
+{
+    echo "$1" | sed 's/[^a-zA-Z0-9_-]//g'
+}
+
+# Expected server key sent to clients. Invalid keys are not sent, and the server logs a warning instead.
+expected_server_key()
+{
+    if [[ -z "$1" || "$1" =~ ^[a-zA-Z0-9_-]{1,150}$ ]]; then
+        echo "$1"
+    fi
+}
+
+LEVEL_KEY="$(expected_level_key "$LEVEL_NAME")"
+NETHER_LEVEL_KEY="$(expected_level_key "${LEVEL_NAME}_nether")"
+SERVER_KEY_EXPECTED="$(expected_server_key "$SERVER_KEY")"
 
 # Datapack biome that replaces every biome in the overworld.
 CUSTOM_BIOME="dhtest:test_biome"
@@ -258,7 +276,7 @@ create_biome_datapack
 trap stop_all EXIT
 trap 'exit 130' INT TERM
 
-echo "Starting server with world \"$LEVEL_NAME\" (expected level key: $LEVEL_KEY)..."
+echo "Starting server with world \"$LEVEL_NAME\" (expected level key: $LEVEL_KEY) and server key \"$SERVER_KEY\" (expected: $SERVER_KEY_EXPECTED)..."
 
 # setsid puts each side in its own process group, so cleanup can stop everything they started.
 setsid "$TESTBED_DIR/server.sh" < "$CONSOLE" > "$SERVER_OUT" 2>&1 &
@@ -286,22 +304,26 @@ if ! wait_for "$SERVER_OUT" "$PLAYER_NAME.*joined the game" 300 "$SERVER_MARK"; 
 fi
 
 if ! wait_for "$CLIENT_OUT" "Level init received for \[minecraft:overworld\]" 60; then
-    abort "Login: client got no level init for the overworld within 60 seconds"
+    abort "Login: client got no level init for the overworld within 60 seconds" "$(log_text "$CLIENT_OUT" | grep -oE "Server sent invalid (level|server) key" | head -n 1)"
 fi
 
 # Give the client time to send its first LOD requests.
 sleep 10
 
-ACTUAL_KEY="$(log_text "$CLIENT_OUT" | grep -oE "Level init received for \[minecraft:overworld\]: .*level key \[[^]]*\]" | tail -n 1 | sed -E 's/.*level key \[([^]]*)\]/\1/')"
+LEVEL_INIT="$(log_text "$CLIENT_OUT" | grep -oE "Level init received for \[minecraft:overworld\]: server key \[[^]]*\], level key \[[^]]*\]" | tail -n 1)"
+ACTUAL_KEY="$(echo "$LEVEL_INIT" | sed -E 's/.*level key \[([^]]*)\]/\1/')"
+ACTUAL_SERVER_KEY="$(echo "$LEVEL_INIT" | sed -E 's/.*server key \[([^]]*)\].*/\1/')"
 
-if [[ "$ACTUAL_KEY" == "$LEVEL_KEY" ]]; then
-    if log_text "$CLIENT_OUT" | grep -q "invalid level key"; then
-        fail "Login: client rejected the level key"
-    elif check_server_errors "Login" "$SERVER_MARK" && check_client_errors "Login" 1; then
-        pass "Login: overworld level key is $ACTUAL_KEY"
-    fi
-else
+if [[ "$ACTUAL_KEY" != "$LEVEL_KEY" ]]; then
     fail "Login: wrong level key" "Expected $LEVEL_KEY, got $ACTUAL_KEY"
+elif [[ "$ACTUAL_SERVER_KEY" != "$SERVER_KEY_EXPECTED" ]]; then
+    fail "Login: wrong server key" "Expected $SERVER_KEY_EXPECTED, got $ACTUAL_SERVER_KEY"
+elif [[ "$SERVER_KEY_EXPECTED" != "$SERVER_KEY" ]] && ! log_text "$SERVER_OUT" | grep -q "has the server key"; then
+    fail "Login: server did not warn about the invalid server key"
+elif log_text "$CLIENT_OUT" | grep -qE "invalid (level|server) key"; then
+    fail "Login: client rejected a key" "$(log_text "$CLIENT_OUT" | grep -oE "Server sent invalid (level|server) key" | head -n 1)"
+elif check_server_errors "Login" "$SERVER_MARK" && check_client_errors "Login" 1; then
+    pass "Login: level key is $ACTUAL_KEY, server key is \"$ACTUAL_SERVER_KEY\""
 fi
 
 #===================#
@@ -388,8 +410,10 @@ if wait_for "$CLIENT_OUT" "Level init received for \[minecraft:the_nether\]" 60 
     # Give the client time to send LOD requests for the new level.
     sleep 20
 
-    if [[ "$NETHER_KEY" != "${LEVEL_KEY}_nether" ]]; then
-        fail "Dimension switch: wrong nether level key" "Expected ${LEVEL_KEY}_nether, got $NETHER_KEY"
+    if [[ "$NETHER_KEY" != "$NETHER_LEVEL_KEY" ]]; then
+        fail "Dimension switch: wrong nether level key" "Expected $NETHER_LEVEL_KEY, got $NETHER_KEY"
+    elif log_text "$CLIENT_OUT" "$CLIENT_MARK" | grep -q "invalid level key"; then
+        fail "Dimension switch: client rejected the level key"
     elif check_server_errors "Dimension switch" "$SERVER_MARK" && check_client_errors "Dimension switch" "$CLIENT_MARK"; then
         pass "Dimension switch: nether level key is $NETHER_KEY"
     fi

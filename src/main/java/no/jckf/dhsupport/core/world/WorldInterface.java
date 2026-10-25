@@ -37,6 +37,8 @@ public interface WorldInterface extends Configurable
 
     String getLevelKey();
 
+    String getServerKey();
+
     double getCoordinateScale();
 
     @Nullable Integer getWorldBorderX();

@@ -74,11 +74,15 @@ public class PlayerConfigHandler
 
             WorldInterface world = this.dhSupport.getWorldInterface(worldUuid);
 
-            Configuration dhsConfig = world.getConfig();
+            // Clients would refuse this level init. A warning was logged when the world was loaded.
+            if (!LevelInitMessage.isValidLevelKey(world.getLevelKey())) {
+                this.dhSupport.debug("Not sending level init for world " + world.getName() + " to " + player.getName() + ", as its level key is invalid.");
+                return;
+            }
 
             LevelInitMessage levelInitResponse = new LevelInitMessage();
             levelInitResponse.setNamespacedKey(worldKey.toString());
-            levelInitResponse.setServerKey(dhsConfig.getString(DhsConfig.SERVER_KEY, ""));
+            levelInitResponse.setServerKey(LevelInitMessage.isValidServerKey(world.getServerKey()) ? world.getServerKey() : "");
             levelInitResponse.setLevelKey(world.getLevelKey());
             levelInitResponse.setTime(System.currentTimeMillis());
             this.pluginMessageHandler.sendPluginMessage(initRequestMessage.getSender(), levelInitResponse);

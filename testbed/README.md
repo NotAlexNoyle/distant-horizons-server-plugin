@@ -31,6 +31,8 @@ Starts a server and client in a fresh world under `testbed/run/test`, runs four 
 3. **Custom biome**: the world gets a datapack that makes `dhtest:test_biome`, a copy of plains, the only overworld biome. The plugin's stored LODs must contain that key and not `minecraft:custom`, and the server must not warn that custom biomes are unsupported.
 4. **Dimension switch**: teleporting to the nether gives a level init with the nether's level key.
 
+The plugin config gets the invalid server key `DH testbed server!`. The plugin must warn about it and send clients an empty server key instead. Set `SERVER_KEY` to test another one.
+
 Each check also fails if the server logged exceptions, or if the plugin sent the player an error message in chat. Handler exceptions only show up in chat, not in the server log.
 
 The run directory is deleted after a passing run, and kept after a failure for its `server.out` and `client.out` logs. Set `KEEP_RUN=1` to always keep it, and `PLUGIN_JAR` to test a prebuilt jar, such as an older version.

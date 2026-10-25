@@ -114,11 +114,17 @@ builder_resolution: 2
 # If your server is accessible via multiple different addresses, consider setting a server key to let clients know
 # that even though the address is different; it's the same server.
 # This value must be GLOBALLY UNIQUE! No other server on planet Earth should have the same server key as you.
+# Can only contain letters (a-z, A-Z), digits (0-9), underscores and dashes, and be at most 150 characters long.
 # Optional.
+# Default: empty
 #server_key:
 
 # When running DHS on a proxied server, set this to a value that is unique to this specific server.
+# Each world's level key is this prefix followed by the world name, with all characters except letters (a-z, A-Z),
+# digits (0-9), underscores and dashes removed. The prefix should only use those characters as well, but may end with @.
+# Level keys must be between 1 and 150 characters long, and unique for each world.
 # Optional.
+# Default: empty
 #level_key_prefix:
 
 # Use the vanilla world border of the respective world.

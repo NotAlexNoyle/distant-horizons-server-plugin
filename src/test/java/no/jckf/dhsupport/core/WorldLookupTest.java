@@ -24,6 +24,12 @@ import no.jckf.dhsupport.core.configuration.DhsConfig;
 import no.jckf.dhsupport.core.world.FakeWorldInterface;
 import no.jckf.dhsupport.core.world.WorldInterface;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
 public class WorldLookupTest extends TestCase
 {
     protected DhSupport dhSupport;
@@ -34,10 +40,13 @@ public class WorldLookupTest extends TestCase
 
     protected WorldInterface spacedWorld;
 
+    protected List<String> warnings = new ArrayList<>();
+
     @Override
     protected void setUp()
     {
         this.dhSupport = new DhSupport("test", "1.21");
+        this.dhSupport.setLogger(capturingLogger(this.warnings));
 
         Configuration config = this.dhSupport.getConfig();
         config.set(DhsConfig.LEVEL_KEY_PREFIX, "prefix_");
@@ -52,6 +61,34 @@ public class WorldLookupTest extends TestCase
         for (WorldInterface world : new WorldInterface[]{ this.overworld, this.nether, this.spacedWorld }) {
             this.dhSupport.setWorldInterface(world.getId(), world);
         }
+    }
+
+    protected static Logger capturingLogger(List<String> messages)
+    {
+        Logger logger = Logger.getAnonymousLogger();
+        logger.setUseParentHandlers(false);
+        logger.addHandler(new Handler()
+        {
+            @Override
+            public void publish(LogRecord record)
+            {
+                messages.add(record.getMessage());
+            }
+
+            @Override
+            public void flush()
+            {
+
+            }
+
+            @Override
+            public void close()
+            {
+
+            }
+        });
+
+        return logger;
     }
 
     public void testForwardLookupResolvesBackToSameWorld()
@@ -91,5 +128,52 @@ public class WorldLookupTest extends TestCase
         this.dhSupport.setWorldInterface(this.nether.getId(), null);
 
         assertNull(this.dhSupport.getWorldInterfaceByLevelKey("prefix_world_nether"));
+    }
+
+    public void testNoWarningForUniqueLevelKeys()
+    {
+        assertTrue(this.warnings.toString(), this.warnings.isEmpty());
+    }
+
+    public void testWarningForDuplicateLevelKey()
+    {
+        // "My World.v2" and "MyWorld.v2" both sanitize to "MyWorldv2", and have the same empty prefix.
+        this.dhSupport.getConfig().set("worlds.MyWorld.v2." + DhsConfig.LEVEL_KEY_PREFIX, "");
+
+        WorldInterface duplicate = new FakeWorldInterface("MyWorld.v2", this.dhSupport.getConfig());
+        this.dhSupport.setWorldInterface(duplicate.getId(), duplicate);
+
+        assertEquals(1, this.warnings.size());
+        assertTrue(this.warnings.get(0), this.warnings.get(0).contains("\"MyWorldv2\""));
+    }
+
+    public void testNoWarningWhenReplacingSameWorld()
+    {
+        this.dhSupport.setWorldInterface(this.overworld.getId(), this.overworld);
+
+        assertTrue(this.warnings.toString(), this.warnings.isEmpty());
+    }
+
+    public void testWarningForInvalidLevelKey()
+    {
+        // Without a prefix, nothing is left of the name once it is sanitized.
+        this.dhSupport.getConfig().set("worlds.世界." + DhsConfig.LEVEL_KEY_PREFIX, "");
+
+        WorldInterface world = new FakeWorldInterface("世界", this.dhSupport.getConfig());
+        this.dhSupport.setWorldInterface(world.getId(), world);
+
+        assertEquals(1, this.warnings.size());
+        assertTrue(this.warnings.get(0), this.warnings.get(0).contains("\"世界\" has the level key \"\""));
+    }
+
+    public void testWarningForInvalidServerKey()
+    {
+        this.dhSupport.getConfig().set(DhsConfig.SERVER_KEY, "my server!");
+
+        WorldInterface world = new FakeWorldInterface("other", this.dhSupport.getConfig());
+        this.dhSupport.setWorldInterface(world.getId(), world);
+
+        assertEquals(1, this.warnings.size());
+        assertTrue(this.warnings.get(0), this.warnings.get(0).contains("server key \"my server!\""));
     }
 }

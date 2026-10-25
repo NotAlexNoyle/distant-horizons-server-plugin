@@ -37,6 +37,7 @@ import no.jckf.dhsupport.core.handler.PluginMessageHandler;
 import no.jckf.dhsupport.core.lodbuilders.LodBuilder;
 import no.jckf.dhsupport.core.message.plugin.FullDataChunkMessage;
 import no.jckf.dhsupport.core.message.plugin.FullDataPartialUpdateMessage;
+import no.jckf.dhsupport.core.message.plugin.LevelInitMessage;
 import no.jckf.dhsupport.core.message.plugin.PluginMessageSender;
 import no.jckf.dhsupport.core.scheduling.Scheduler;
 import no.jckf.dhsupport.core.world.WorldInterface;
@@ -216,6 +217,21 @@ public class DhSupport implements Configurable
         if (worldInterface == null) {
             this.worldInterfaces.remove(id);
             return;
+        }
+
+        if (!LevelInitMessage.isValidLevelKey(worldInterface.getLevelKey())) {
+            this.warning("World \"" + worldInterface.getName() + "\" has the level key \"" + worldInterface.getLevelKey() + "\", which Distant Horizons clients don't accept. Distant Horizons is disabled in this world. Level keys can be up to 150 characters of a-z, A-Z, 0-9, _ and -. Rename the world, or change level_key_prefix.");
+        }
+
+        if (!LevelInitMessage.isValidServerKey(worldInterface.getServerKey())) {
+            this.warning("World \"" + worldInterface.getName() + "\" has the server key \"" + worldInterface.getServerKey() + "\", which Distant Horizons clients don't accept. It will not be used. Server keys can be up to 150 characters of a-z, A-Z, 0-9, _ and -.");
+        }
+
+        // Clients tell levels apart by their level key, so two worlds sharing one will get mixed up.
+        for (WorldInterface other : this.worldInterfaces.values()) {
+            if (!other.getId().equals(id) && other.getLevelKey().equals(worldInterface.getLevelKey())) {
+                this.warning("Worlds \"" + other.getName() + "\" and \"" + worldInterface.getName() + "\" have the same level key \"" + worldInterface.getLevelKey() + "\". Distant Horizons can't tell them apart. Rename one of them, or give one a different level_key_prefix.");
+            }
         }
 
         this.worldInterfaces.put(id, worldInterface);

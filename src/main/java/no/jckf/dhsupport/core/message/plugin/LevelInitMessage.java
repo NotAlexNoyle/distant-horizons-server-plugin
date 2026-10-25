@@ -21,8 +21,15 @@ package no.jckf.dhsupport.core.message.plugin;
 import no.jckf.dhsupport.core.bytestream.Decoder;
 import no.jckf.dhsupport.core.bytestream.Encoder;
 
+import java.util.regex.Pattern;
+
 public class LevelInitMessage extends PluginMessage // TODO: Should probably eventually be a TrackablePluginMessage
 {
+    // Distant Horizons clients refuse level init messages with keys that don't match these.
+    public static final Pattern SERVER_KEY_PATTERN = Pattern.compile("^(?=.{1,150}$)[a-zA-Z0-9_-]+$");
+
+    public static final Pattern LEVEL_KEY_PATTERN = Pattern.compile("^(?=.{1,150}$)([a-zA-Z0-9_-]+@)?[a-zA-Z0-9_-]+(:[a-zA-Z0-9_-]+)?$");
+
     protected String namespacedKey;
 
     protected String serverKey;
@@ -30,6 +37,19 @@ public class LevelInitMessage extends PluginMessage // TODO: Should probably eve
     protected String levelKey;
 
     protected long time;
+
+    /**
+     * The server key is optional, so empty keys are valid too.
+     */
+    public static boolean isValidServerKey(String serverKey)
+    {
+        return serverKey.isEmpty() || SERVER_KEY_PATTERN.matcher(serverKey).matches();
+    }
+
+    public static boolean isValidLevelKey(String levelKey)
+    {
+        return LEVEL_KEY_PATTERN.matcher(levelKey).matches();
+    }
 
     public void setNamespacedKey(String namespacedKey)
     {
