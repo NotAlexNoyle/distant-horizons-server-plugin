@@ -37,3 +37,7 @@ replay_pid*
 # Test server
 /server
 /folia
+
+# Testbed downloads and runtime files
+/testbed/.cache
+/testbed/run
