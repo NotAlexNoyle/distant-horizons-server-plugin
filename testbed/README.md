@@ -24,11 +24,12 @@ Set `SKIP_BUILD=1` to start the server without rebuilding the plugin.
 testbed/test.sh
 ```
 
-Starts a server and client in a fresh world under `testbed/run/test`, runs three checks, shuts both down and exits non-zero if any check fails. A run takes about two minutes, and needs a desktop session since the client opens a window.
+Starts a server and client in a fresh world under `testbed/run/test`, runs four checks, shuts both down and exits non-zero if any check fails. A run takes about two minutes, and needs a desktop session since the client opens a window.
 
 1. **Login**: the client gets a level init for the overworld with the expected level key.
 2. **LOD generation**: `dhs status` shows the player using DH, with a generation speed above zero.
-3. **Dimension switch**: teleporting to the nether gives a level init with the nether's level key.
+3. **Custom biome**: the world gets a datapack that makes `dhtest:test_biome`, a copy of plains, the only overworld biome. The plugin's stored LODs must contain that key and not `minecraft:custom`, and the server must not warn that custom biomes are unsupported.
+4. **Dimension switch**: teleporting to the nether gives a level init with the nether's level key.
 
 Each check also fails if the server logged exceptions, or if the plugin sent the player an error message in chat. Handler exceptions only show up in chat, not in the server log.
 

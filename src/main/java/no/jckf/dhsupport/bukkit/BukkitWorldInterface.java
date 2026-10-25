@@ -110,17 +110,21 @@ public class BukkitWorldInterface extends AbstractWorldInterface
 
         }
 
-        // Detect if we're running under Paper (or a Paper fork) that has this patch:
-        // https://github.com/PaperMC/Paper/commit/5bf259115c1ce29dd96df5fcf53739c94d39f902
-        try {
-            Class<?> regionAccessor = Class.forName("org.bukkit.RegionAccessor");
+        // Since 1.21.3, biomes come from the registry and report their real keys, custom ones included.
+        // Before that, Biome was an enum and every custom biome was reported as "minecraft:custom".
+        if (org.bukkit.block.Biome.class.isEnum()) {
+            // Detect if we're running under Paper (or a Paper fork) that has this patch:
+            // https://github.com/PaperMC/Paper/commit/5bf259115c1ce29dd96df5fcf53739c94d39f902
+            try {
+                Class<?> regionAccessor = Class.forName("org.bukkit.RegionAccessor");
 
-            this.getBiomeKey = this.unsafeValues.getClass().getMethod("getBiomeKey", regionAccessor, int.class, int.class, int.class);
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            if (!BIOME_KEY_WARNING_SENT) {
-                this.getLogger().warning("Custom biomes are not supported on this server.");
+                this.getBiomeKey = this.unsafeValues.getClass().getMethod("getBiomeKey", regionAccessor, int.class, int.class, int.class);
+            } catch (ClassNotFoundException | NoSuchMethodException e) {
+                if (!BIOME_KEY_WARNING_SENT) {
+                    this.getLogger().warning("Custom biomes are not supported on this server.");
 
-                BIOME_KEY_WARNING_SENT = true;
+                    BIOME_KEY_WARNING_SENT = true;
+                }
             }
         }
 

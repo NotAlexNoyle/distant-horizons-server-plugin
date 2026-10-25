@@ -2,7 +2,8 @@
 # Runs a real server and client in a fresh world, and checks that:
 #   1. Login: the client gets a level init with the expected level key.
 #   2. LOD generation: the server sees the player using DH and generates LODs.
-#   3. Dimension switch: moving to the nether gives a new level init, without errors.
+#   3. Custom biome: LODs from a datapack biome store its real key, not "minecraft:custom".
+#   4. Dimension switch: moving to the nether gives a new level init, without errors.
 # After each step, the server log is checked for exceptions, and the client chat for errors the
 # plugin reports to the player.
 #
@@ -32,6 +33,9 @@ CLIENT_OUT="$RUN_DIR/client.out"
 CONSOLE="$RUN_DIR/console"
 
 LEVEL_KEY="$(echo "$LEVEL_NAME" | sed 's/[^a-zA-Z0-9_-]//g')"
+
+# Datapack biome that replaces every biome in the overworld.
+CUSTOM_BIOME="dhtest:test_biome"
 
 SERVER_PID=""
 CLIENT_PID=""
@@ -140,6 +144,81 @@ check_client_errors()
     return 0
 }
 
+# Writes a datapack that makes $CUSTOM_BIOME, a copy of vanilla plains, the only overworld biome.
+# The biome definition and data pack format come from the client jar, so they match the game version.
+create_biome_datapack()
+{
+    local pack="$SERVER_DIR/$LEVEL_NAME/datapacks/dhtest"
+    local client_jar
+
+    client_jar="$(ls "$MC_MAIN_DIR"/versions/fabric-"$MC_VERSION"-*/fabric-"$MC_VERSION"-*.jar | head -n 1)"
+
+    mkdir -p "$pack/data/dhtest/worldgen/biome" "$pack/data/minecraft/dimension"
+
+    python3 -I - "$client_jar" "$pack" <<'EOF'
+import json, sys, zipfile
+
+client_jar, pack = sys.argv[1], sys.argv[2]
+
+with zipfile.ZipFile(client_jar) as jar:
+    pack_format = json.loads(jar.read('version.json'))['pack_version']['data_major']
+    plains = jar.read('data/minecraft/worldgen/biome/plains.json')
+
+with open(pack + '/pack.mcmeta', 'w') as file:
+    json.dump({'pack': {
+        'description': 'DH Support testbed biome',
+        'pack_format': pack_format,
+        'min_format': pack_format,
+        'max_format': pack_format,
+    }}, file)
+
+with open(pack + '/data/dhtest/worldgen/biome/test_biome.json', 'wb') as file:
+    file.write(plains)
+
+with open(pack + '/data/minecraft/dimension/overworld.json', 'w') as file:
+    json.dump({
+        'type': 'minecraft:overworld',
+        'generator': {
+            'type': 'minecraft:noise',
+            'settings': 'minecraft:overworld',
+            'biome_source': {'type': 'minecraft:fixed', 'biome': 'dhtest:test_biome'},
+        },
+    }, file)
+EOF
+}
+
+# Prints how often each given biome key appears in the plugin's stored LODs, one count per line.
+# LOD data holds several XZ-compressed sections, so every XZ stream in each row is decompressed.
+count_lod_biomes()
+{
+    python3 -I - "$SERVER_DIR/plugins/DHSupport/data.sqlite" "$@" <<'EOF'
+import lzma, sqlite3, sys
+
+database, keys = sys.argv[1], [key.encode() for key in sys.argv[2:]]
+counts = [0] * len(keys)
+
+try:
+    connection = sqlite3.connect('file:' + database + '?mode=ro', uri=True, timeout=10)
+    rows = connection.execute('SELECT data FROM lods').fetchall()
+except sqlite3.Error:
+    rows = []
+
+for (data,) in rows:
+    start = 0
+
+    while (start := data.find(b'\xfd7zXZ\x00', start)) >= 0:
+        try:
+            raw = lzma.LZMADecompressor(format=lzma.FORMAT_XZ).decompress(data[start:])
+            counts = [count + raw.count(key) for count, key in zip(counts, keys)]
+        except lzma.LZMAError:
+            pass
+
+        start += 6
+
+print('\n'.join(str(count) for count in counts))
+EOF
+}
+
 stop_all()
 {
     if [[ -n "$CLIENT_PID" ]] && kill -0 "$CLIENT_PID" 2>/dev/null; then
@@ -173,6 +252,8 @@ stop_all()
 rm -rf "$RUN_DIR"
 mkdir -p "$RUN_DIR"
 mkfifo "$CONSOLE"
+
+create_biome_datapack
 
 trap stop_all EXIT
 trap 'exit 130' INT TERM
@@ -258,8 +339,38 @@ else
     check_client_errors "LOD generation" "$CLIENT_MARK"
 fi
 
+#=================#
+# 3. custom biome #
+#=================#
+
+echo "Checking custom biome in LODs..."
+
+BIOME_OK=0
+DEADLINE=$((SECONDS + 60))
+
+while ((SECONDS < DEADLINE)); do
+    mapfile -t BIOME_COUNTS < <(count_lod_biomes "$CUSTOM_BIOME" "minecraft:custom")
+
+    if ((${BIOME_COUNTS[0]:-0} > 0)); then
+        BIOME_OK=1
+        break
+    fi
+
+    sleep 5
+done
+
+if log_text "$SERVER_OUT" | grep -q "Custom biomes are not supported"; then
+    fail "Custom biome: server warned that custom biomes are not supported"
+elif ((!BIOME_OK)); then
+    fail "Custom biome: $CUSTOM_BIOME not found in stored LODs within 60 seconds" "minecraft:custom found ${BIOME_COUNTS[1]:-0} times"
+elif ((${BIOME_COUNTS[1]:-0} > 0)); then
+    fail "Custom biome: stored LODs also contain minecraft:custom" "${BIOME_COUNTS[1]} times"
+else
+    pass "Custom biome: $CUSTOM_BIOME found ${BIOME_COUNTS[0]} times in stored LODs"
+fi
+
 #=====================#
-# 3. dimension switch #
+# 4. dimension switch #
 #=====================#
 
 echo "Switching to the nether..."
