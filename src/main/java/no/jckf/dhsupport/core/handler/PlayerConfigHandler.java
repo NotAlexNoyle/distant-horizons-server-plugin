@@ -55,6 +55,10 @@ public class PlayerConfigHandler
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
             Player player = Bukkit.getPlayer(initRequestMessage.getSender());
 
+            if (player == null) {
+                return;
+            }
+
             NamespacedKey worldKey = NamespacedKey.fromString(initRequestMessage.getWorldKey());
 
             // TODO: This too 👎
@@ -91,6 +95,10 @@ public class PlayerConfigHandler
         this.pluginMessageHandler.getEventBus().registerHandler(RemotePlayerConfigMessage.class, (configMessage) -> {
             // TODO: Some sort of Player wrapper or interface object. Bukkit classes should not be imported here.
             Player player = Bukkit.getPlayer(configMessage.getSender());
+
+            if (player == null) {
+                return;
+            }
 
             Map<UUID, Configuration> playerConfigurations = new HashMap<>();
 
