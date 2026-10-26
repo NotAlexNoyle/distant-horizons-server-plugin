@@ -28,7 +28,9 @@ import no.jckf.dhsupport.core.message.plugin.*;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PluginMessageHandler
 {
@@ -41,6 +43,9 @@ public class PluginMessageHandler
     public final short protocolVersion = 16;
 
     private EventBus<PluginMessage> eventBus;
+
+    // Players whose DH connection has been closed. Their messages are ignored until they reconnect.
+    protected Set<UUID> closedConnections = ConcurrentHashMap.newKeySet();
 
     public PluginMessageHandler(DhSupport dhSupport)
     {
@@ -73,6 +78,11 @@ public class PluginMessageHandler
 
     }
 
+    public void onPlayerDisconnect(UUID playerId)
+    {
+        this.closedConnections.remove(playerId);
+    }
+
     @Nullable
     public EventBus<PluginMessage> getEventBus()
     {
@@ -81,6 +91,10 @@ public class PluginMessageHandler
 
     public void onPluginMessageReceived(@NotNull String channel, @NotNull UUID senderUuid, byte[] data)
     {
+        if (this.closedConnections.contains(senderUuid)) {
+            return;
+        }
+
         PluginMessage message;
 
         try {
@@ -96,6 +110,8 @@ public class PluginMessageHandler
         }
 
         if (message instanceof CloseReasonMessage) {
+            this.closedConnections.add(senderUuid);
+
             throw new ConnectionClosedException(((CloseReasonMessage) message).getReason());
         }
 
@@ -115,7 +131,13 @@ public class PluginMessageHandler
 
         if (protocolVersion != this.protocolVersion) {
             CloseReasonMessage closeReasonMessage = new CloseReasonMessage();
-            closeReasonMessage.setReason((protocolVersion > this.protocolVersion ? "Server" : "Client") + " is outdated.");
+
+            if (protocolVersion > this.protocolVersion) {
+                closeReasonMessage.setReason("This server's DH plugin is outdated. You will not receive any LOD data.");
+            } else {
+                closeReasonMessage.setReason("Your client's version of DH is outdated. You will not receive any LOD data.");
+            }
+
             this.sendPluginMessage(senderUuid, closeReasonMessage);
             return closeReasonMessage;
         }

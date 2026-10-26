@@ -63,5 +63,6 @@ public class PlayerHandler implements Listener
     public void onPlayerDisconnect(PlayerQuitEvent event)
     {
         this.plugin.getDhSupport().clearPlayerConfiguration(event.getPlayer().getUniqueId());
+        this.plugin.getDhSupport().getPluginMessageHandler().onPlayerDisconnect(event.getPlayer().getUniqueId());
     }
 }
