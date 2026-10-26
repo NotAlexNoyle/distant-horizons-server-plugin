@@ -27,6 +27,7 @@ import no.jckf.dhsupport.core.world.AbstractWorldInterface;
 import no.jckf.dhsupport.core.world.MaterialRecord;
 import no.jckf.dhsupport.core.world.WorldInterface;
 import org.bukkit.*;
+import org.bukkit.block.data.BlockData;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -34,6 +35,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 public class BukkitWorldInterface extends AbstractWorldInterface
@@ -59,7 +61,11 @@ public class BukkitWorldInterface extends AbstractWorldInterface
 
     protected EnumMap<Material, MaterialRecord> materialCache = new EnumMap<>(Material.class);
 
-    protected Map<String, Map<String, String>> propertyCache = new HashMap<>();
+    // Building these is expensive, and a world only has so many block states. Every LOD gets its own instance through
+    // newInstance(), so these are shared between all instances for the same world.
+    protected final Map<BlockData, String> blockStateStrings;
+
+    protected final Map<BlockData, Map<String, String>> blockProperties;
 
     protected UnsafeValues unsafeValues;
 
@@ -80,10 +86,17 @@ public class BukkitWorldInterface extends AbstractWorldInterface
 
     public BukkitWorldInterface(DhSupportBukkitPlugin plugin, World world, Configuration config)
     {
+        this(plugin, world, config, new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+    }
+
+    protected BukkitWorldInterface(DhSupportBukkitPlugin plugin, World world, Configuration config, Map<BlockData, String> blockStateStrings, Map<BlockData, Map<String, String>> blockProperties)
+    {
         super(world.getName(), config);
 
         this.plugin = plugin;
         this.world = world;
+        this.blockStateStrings = blockStateStrings;
+        this.blockProperties = blockProperties;
 
         this.lightOffset = this.getConfig().getInt(DhsConfig.LIGHT_OFFSET_HACK, this.plugin.getDhSupport().getGameVersion().equals("1.20.1") ? this.world.getMinHeight() : 0);
         this.trustHeightMap = this.getConfig().getBool(DhsConfig.TRUST_HEIGHT_MAP, this.trustHeightMap);
@@ -142,7 +155,7 @@ public class BukkitWorldInterface extends AbstractWorldInterface
     @Override
     public WorldInterface newInstance()
     {
-        BukkitWorldInterface newInstance = new BukkitWorldInterface(this.plugin, this.world, this.config);
+        BukkitWorldInterface newInstance = new BukkitWorldInterface(this.plugin, this.world, this.config, this.blockStateStrings, this.blockProperties);
 
         newInstance.setLogger(this.getLogger());
 
@@ -590,8 +603,13 @@ public class BukkitWorldInterface extends AbstractWorldInterface
             return new MaterialRecord(Utils.namespaceKey(this.getDummyMaterialAt(y)), false);
         }
 
+        return this.getMaterialRecord(this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)));
+    }
+
+    protected MaterialRecord getMaterialRecord(Material material)
+    {
         return this.materialCache.computeIfAbsent(
-            this.getChunk(x, z).getBlockType(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)),
+            material,
             (mat) -> {
                 String key = Utils.unNamespaceKey(mat.getKey().toString());
                 String mapped = this.config.getString(DhsConfig.MATERIAL_MAP + '.' + key, key);
@@ -604,16 +622,38 @@ public class BukkitWorldInterface extends AbstractWorldInterface
         );
     }
 
+    protected BlockData getBlockDataAt(int x, int y, int z)
+    {
+        return this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z));
+    }
+
     @Override
     public String getBlockStateAsStringAt(int x, int y, int z)
     {
-        MaterialRecord materialRecord = this.getMaterialRecordAt(x, y, z);
+        if (this.isDummyMode()) {
+            return this.getMaterialRecordAt(x, y, z).toString();
+        }
 
-        if (this.isDummyMode() || materialRecord.isMapped()) {
+        BlockData blockData = this.getBlockDataAt(x, y, z);
+        String blockStateString = this.blockStateStrings.get(blockData);
+
+        // Check before calling computeIfAbsent(), as the method reference would allocate on every call, even on hits.
+        if (blockStateString == null) {
+            blockStateString = this.blockStateStrings.computeIfAbsent(blockData, this::createBlockStateString);
+        }
+
+        return blockStateString;
+    }
+
+    protected String createBlockStateString(BlockData blockData)
+    {
+        MaterialRecord materialRecord = this.getMaterialRecord(blockData.getMaterial());
+
+        if (materialRecord.isMapped()) {
             return materialRecord.toString();
         }
 
-        Map<String, String> properties = this.getBlockPropertiesAt(x, y, z);
+        Map<String, String> properties = this.getBlockProperties(blockData);
 
         if (properties.isEmpty()) {
             return materialRecord.toString();
@@ -644,13 +684,23 @@ public class BukkitWorldInterface extends AbstractWorldInterface
             return Collections.emptyMap();
         }
 
-        String dataString = this.getChunk(x, z).getBlockData(Coordinates.blockToChunkRelative(x), y, Coordinates.blockToChunkRelative(z)).getAsString();
+        return this.getBlockProperties(this.getBlockDataAt(x, y, z));
+    }
 
-        Map<String, String> cached = this.propertyCache.get(dataString);
+    protected Map<String, String> getBlockProperties(BlockData blockData)
+    {
+        Map<String, String> properties = this.blockProperties.get(blockData);
 
-        if (cached != null) {
-            return cached;
+        if (properties == null) {
+            properties = this.blockProperties.computeIfAbsent(blockData, this::parseBlockProperties);
         }
+
+        return properties;
+    }
+
+    protected Map<String, String> parseBlockProperties(BlockData blockData)
+    {
+        String dataString = blockData.getAsString();
 
         int kvStart = dataString.indexOf('[');
 
@@ -670,11 +720,7 @@ public class BukkitWorldInterface extends AbstractWorldInterface
             properties.put(kv[0], kv[1]);
         }
 
-        properties = Collections.unmodifiableMap(properties);
-
-        this.propertyCache.put(dataString, properties);
-
-        return properties;
+        return Collections.unmodifiableMap(properties);
     }
 
     @Override
